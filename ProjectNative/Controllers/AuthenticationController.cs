@@ -20,13 +20,15 @@ namespace ProjectNative.Controllers
         private readonly TokenService _tokenService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IAccountService _accountService;
+        private readonly IEmailSenderService _emailSenderService;
 
-        public AuthenticationController(TokenService tokenService, UserManager<ApplicationUser> userManager, IAccountService accountService)
+        public AuthenticationController(TokenService tokenService, UserManager<ApplicationUser> userManager, IAccountService accountService,
+            IEmailSenderService emailSenderService)
         {
             _tokenService = tokenService;
             _userManager = userManager;
             _accountService = accountService;
-
+            _emailSenderService = emailSenderService;
         }
 
         [HttpGet("[action]")]
@@ -175,6 +177,73 @@ namespace ProjectNative.Controllers
 
             return true;
         }
+
+
+
+        [HttpPost("[action]")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token)
+        {
+            if (userId == null || token == null)
+            {
+                return BadRequest("Invalid user ID or token");
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                return BadRequest("User not found");
+            }
+
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+            if (result.Succeeded)
+            {
+                return Ok("Email confirmed successfully");
+            }
+
+            return BadRequest("Failed to confirm email");
+
+
+            //var check = await _userManager.FindByEmailAsync(registerDto.Email);
+
+            //if (check != null)
+            //{
+            //    return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "404", Message = "This e-mail has already been used." });
+            //}
+
+            //#region ตรวจสอบว่า Role ที่ได้รับมาไม่มีในฐานข้อมูล
+            //var roleExists = await _roleManager.RoleExistsAsync(registerDto.Role);
+            //if (!roleExists)
+            //{
+            //    return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "404", Message = "The specified role does not exist." });
+            //}
+            //#endregion
+
+            //// สร้าง user
+            //var createuser = new ApplicationUser
+            //{
+            //    UserName = registerDto.Username,
+            //    Email = registerDto.Email,
+            //    SecurityStamp = Guid.NewGuid().ToString(),
+
+            //};
+            //var result = await _userManager.CreateAsync(createuser, registerDto.Password);
+
+            //if (!result.Succeeded)
+            //{
+            //    foreach (var error in result.Errors)
+            //    {
+            //        ModelState.AddModelError(error.Code, error.Description);
+            //    }
+            //    return ValidationProblem();
+            //}
+            //await _userManager.AddToRoleAsync(createuser, registerDto.Role);
+
+            //return StatusCode(StatusCodes.Status201Created, new Response { Status = "201", Message = " Create Successfuly" });
+
+
+        }
+
 
     }
 }

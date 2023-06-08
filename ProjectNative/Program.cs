@@ -37,7 +37,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddDbContext<DataContext>();
 
 
-#region Identityสร้างเซอร์วิส User,Role (ระวังการเรียงลำดับ)
+#region Identityสร้างเซอร์วิส User,Role (ระวังการเรียงลำดับ) .AddDefaultTokenProviders() เพิ่มมาเพราะต้องใช้ในการเปลี่ยน email User
 builder.Services.AddIdentityCore<ApplicationUser>(opt =>
 {
     opt.User.RequireUniqueEmail = true;
@@ -66,6 +66,11 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartUsersService, CartUsersService>();
+
+#region เพิ่มมาเพื่อใช้ในการ Confirm Emai
+builder.Services.AddScoped<IEmailSenderService , EmailSenderService>();
+#endregion
+
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 
 builder.Services.AddAuthorization();

@@ -25,7 +25,7 @@ namespace ProjectNative.Services
         private string GenerateID() => Guid.NewGuid().ToString("N");
 
 
-        public async Task<object> AddItemToCartAsync(AddCartRequestDTO addCartDTO)
+        public async Task<IActionResult> AddItemToCartAsync(AddCartRequestDTO addCartDTO)
         {
             var user = await _dataContext.Users.SingleOrDefaultAsync(u => u.Id == addCartDTO.userid);
 
@@ -37,7 +37,6 @@ namespace ProjectNative.Services
             var product = await _dataContext.Products.SingleOrDefaultAsync(e => e.Id == addCartDTO.productId);
 
             //var product = await _dataContext.Products.Include(e => e.ProductImages).SingleOrDefaultAsync(e => e.Id == addCartDTO.productId);
-
 
             if (product == null)
             {

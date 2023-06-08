@@ -128,7 +128,6 @@ namespace ProjectNative.Services
             #endregion
 
 
-
             // สร้าง user
             var createuser = new ApplicationUser
             {

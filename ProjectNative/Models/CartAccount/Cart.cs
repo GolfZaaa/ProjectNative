@@ -15,12 +15,6 @@ namespace ProjectNative.Models.CartAccount
 
 
 
-
-
-
-
-
-
         public void AddItem(Product product, int amount)
         {
             // ตรวจสอบโดยการ วนลูป ถ้าสินค้าที่ส่งมาไม่มีในตะกร้าให้เพิ่มเข้าไป
@@ -34,6 +28,25 @@ namespace ProjectNative.Models.CartAccount
             if (existingItem != null) existingItem.Amount += amount;
         }
 
+        //public void AddItem(Product product, int amount)
+        //{
+        //    // ตรวจสอบว่าสินค้าที่เพิ่มอยู่ในตะกร้าแล้วหรือไม่
+        //    var existingItem = Items.FirstOrDefault(item => item.Product.Id == product.Id);
+
+        //    int currentAmount = 0;
+
+        //    if (existingItem != null)
+        //    {
+        //        // หากมีสินค้าอยู่แล้วในตะกร้า ให้เพิ่มจำนวนสินค้า
+        //        currentAmount = existingItem.Amount;
+        //        existingItem.Amount += amount;
+        //    }
+        //    else
+        //    {
+        //        // หากสินค้ายังไม่อยู่ในตะกร้า ให้เพิ่มสินค้าเข้าไปใหม่
+        //        Items.Add(new CartItem { Product = product, Amount = amount });
+        //    }
+        //}
 
 
         public void RemoveItem(int productId, int amount)
