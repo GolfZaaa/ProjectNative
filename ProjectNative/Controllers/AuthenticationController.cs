@@ -90,7 +90,7 @@ namespace ProjectNative.Controllers
             await _userManager.AddToRoleAsync(createuser, registerDto.Role);
             // สร้าง token สำหรับการยืนยันอีเมล์
             var token = Guid.NewGuid().ToString();
-            _memoryCache.Set("Token", token, TimeSpan.FromDays(1));
+            _memoryCache.Set("Token", "1234", TimeSpan.FromMinutes(2));
 
             //var token = await _userManager.GenerateEmailConfirmationTokenAsync(createuser);
 

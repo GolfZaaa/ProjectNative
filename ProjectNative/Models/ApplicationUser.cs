@@ -8,6 +8,5 @@ namespace ProjectNative.Models
 {
     public class ApplicationUser : IdentityUser
     {
-        public string? EmailConfirmationToken { get; set; } 
     }
 }
