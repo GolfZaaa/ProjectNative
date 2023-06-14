@@ -1,5 +1,7 @@
+using FluentAssertions.Common;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -7,7 +9,10 @@ using ProjectNative.Data;
 using ProjectNative.Models;
 using ProjectNative.Services;
 using ProjectNative.Services.IService;
+using SendGrid;
+using SendGrid.Extensions.DependencyInjection;
 using Swashbuckle.AspNetCore.Filters;
+using System.Configuration;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -66,15 +71,33 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartUsersService, CartUsersService>();
+builder.Services.AddMemoryCache();
 
-#region เพิ่มมาเพื่อใช้ในการ Confirm Emai
-builder.Services.AddScoped<IEmailSenderService , EmailSenderService>();
-#endregion
+
+#region SendGrid Start
+
+
+// เพิ่มการกำหนดค่า SendGridClient
+builder.Services.AddTransient<SendGridClient>(c =>
+{
+    var configuration = new ConfigurationBuilder()
+        .SetBasePath(Directory.GetCurrentDirectory())
+        .AddJsonFile("appsettings.json")
+        .Build();
+
+    return new SendGridClient(configuration.GetSection("SendGrid:SendGridKey").Value);
+});
+
+
+#endregion SendGrid End
+
+
 
 builder.Services.AddAutoMapper(typeof(Program).Assembly);
 
 builder.Services.AddAuthorization();
 #endregion
+
 
 
 var app = builder.Build();

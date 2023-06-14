@@ -13,10 +13,13 @@ using ProjectNative.DTOs.CartDto;
 using ProjectNative.DTOs.ProductDto;
 using ProjectNative.Models;
 using ProjectNative.Models.CartAccount;
+using ProjectNative.Models.OrderAccount;
 using ProjectNative.Services.IService;
 using System.Net;
 using System.Security.Claims;
-using Response = ProjectNative.Models.Response;
+using System.Text.Json.Serialization;
+using System.Text.Json;
+using Response = ProjectNative.Models.ResponseReport;
 
 namespace ProjectNative.Controllers
 {
@@ -81,6 +84,55 @@ namespace ProjectNative.Controllers
             return Ok();
         }
 
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> CreateOrderAsync(string userId)
+        {
+            var cart = await RetrieveCart(userId);
+            if (cart == null)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "400", Message = "Cart not Found" });
+            }
+            var user = await _dataContext.Users.SingleOrDefaultAsync(a => a.Id == userId);
+            if (user == null)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "400", Message = "User not Found" });
+            }
+
+
+            var order = new Order
+            {
+                Id = GenerateID(),
+                UserId = userId,
+                OrderDate = DateTime.Now,
+            };
+
+            foreach (var item in cart.Items)
+            {
+                var orderItem = new OrderItem
+                {
+                    ProductId = item.Product.Id,
+                    Quantity = item.Amount,
+                    Price = item.Product.Price,
+                    OrderId = order.Id, // กำหนดค่า OrderId ให้กับ OrderItem
+                };
+                order.OrderItems.Add(orderItem);
+            }
+            order.TotalAmount = order.GetTotalAmount(); // กำหนดค่า TotalAmount
+            // ทำสิ่งที่ต้องการกับ order (เช่นบันทึกลงฐานข้อมูล)
+            _dataContext.Orders.Add(order);
+            await _dataContext.SaveChangesAsync();
+            return Ok(order); // หรือส่ง HTTP response อื่นๆ ที่เหมาะสม
+        }
+
+        private async Task<Cart> RetrieveCart(string accountId)
+        {
+            var cart = await _dataContext.Carts
+                   .Include(i => i.Items)
+                   .ThenInclude(p => p.Product)
+                   .SingleOrDefaultAsync(x => x.UserId == accountId);
+            return cart;
+        }
 
 
     }

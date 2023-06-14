@@ -1,11 +1,18 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using ProjectNative.DTOs;
 using ProjectNative.Models;
 using ProjectNative.Services.IService;
+using SendGrid;
+using SendGrid.Helpers.Mail;
 using System.Security.Claims;
+using System.Text.Encodings.Web;
 
 namespace ProjectNative.Services
 {
@@ -15,13 +22,16 @@ namespace ProjectNative.Services
         private readonly TokenService _tokenService;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly SendGridClient _sendGridClient;
 
-        public AccountService(UserManager<ApplicationUser> userManager, TokenService tokenService, IHttpContextAccessor httpContextAccessor,RoleManager<IdentityRole> roleManager)
+        public AccountService(UserManager<ApplicationUser> userManager, TokenService tokenService, IHttpContextAccessor httpContextAccessor, RoleManager<IdentityRole> roleManager,
+            SendGridClient sendGridClient)
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _httpContextAccessor = httpContextAccessor;
             _roleManager = roleManager;
+            _sendGridClient = sendGridClient;
         }
 
         public async Task<object> DeleteAsync(string username)
@@ -31,11 +41,11 @@ namespace ProjectNative.Services
             if (check != null)
             {
                 await _userManager.DeleteAsync(check);
-                return Ok(new Response { Status = "201", Message = "Deleted Successfully" });
+                return Ok(new ResponseReport { Status = "201", Message = "Deleted Successfully" });
             }
             else
             {
-                return StatusCode(StatusCodes.Status404NotFound, new Response { Status = "404", Message = "Failed to Delete" });
+                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "Failed to Delete" });
             }
         }
 
@@ -60,7 +70,7 @@ namespace ProjectNative.Services
 
             if (user == null)
             {
-                return StatusCode(StatusCodes.Status404NotFound, new Response { Status = "404", Message = "Username Not Found" });
+                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "Username Not Found" });
             }
 
             var userRole = await _userManager.GetRolesAsync(user);
@@ -97,9 +107,8 @@ namespace ProjectNative.Services
 
             if (check == null || !await _userManager.CheckPasswordAsync(check, loginDto.Password))
             {
-                return StatusCode(StatusCodes.Status404NotFound, new Response { Status = "404", Message = "Invalid username or password. Please try again." });
+                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "Invalid username or password. Please try again." });
             }
-
             var userDto = new UserDto
             {
                 Email = check.Email,
@@ -116,17 +125,16 @@ namespace ProjectNative.Services
 
             if (check != null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "404", Message = "This e-mail has already been used." });
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "404", Message = "This e-mail has already been used." });
             }
 
             #region ตรวจสอบว่า Role ที่ได้รับมาไม่มีในฐานข้อมูล
             var roleExists = await _roleManager.RoleExistsAsync(registerDto.Role);
             if (!roleExists)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "404", Message = "The specified role does not exist." });
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "404", Message = "The specified role does not exist." });
             }
             #endregion
-
 
             // สร้าง user
             var createuser = new ApplicationUser
@@ -148,7 +156,44 @@ namespace ProjectNative.Services
             }
             await _userManager.AddToRoleAsync(createuser, registerDto.Role);
 
-            return  StatusCode(StatusCodes.Status201Created,new Response { Status = "201", Message = " Create Successfuly"});
+
+            #region SendGrid
+            //โดยโทเค็นนี้จะถูกใช้ในการยืนยันอีเมล์ผ่าน URL ที่จะส่งให้กับผู้ใช้งานเพื่อให้ผู้ใช้ที่สมัครคลิกเพื่อยืนยันอีเมล์ของตนเอง
+            var emailConfirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(createuser);
+
+
+            // สร้าง URL ไว้สำหรับยืนยันอีเมล์
+            if (_httpContextAccessor != null && _httpContextAccessor.HttpContext != null && _httpContextAccessor.HttpContext.Request != null)
+            {
+                // กำหนดค่า URL ตามที่คุณต้องการ
+                var emailConfirmationUrl = _httpContextAccessor.HttpContext.Request.Scheme + "://" +
+                    _httpContextAccessor.HttpContext.Request.Host +
+                    _httpContextAccessor.HttpContext.Request.PathBase +
+                    Url.Link("ConfirmEmail", new { userId = createuser.Id, token = emailConfirmationToken });
+
+                // ส่งอีเมล์ยืนยันอีเมล์ไปยังผู้ใช้
+                await SendEmailConfirmationEmail(createuser.Email, emailConfirmationUrl);
+            }
+            else
+            {
+                // กรณีไม่พบ HttpContext หรือ Request ให้จัดการตามที่เหมาะสม
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "Error" });
+            }
+
+            // ส่งอีเมล์ยืนยันอีเมล์ไปยังผู้ใช้
+            #endregion
+
+            return StatusCode(StatusCodes.Status201Created,new ResponseReport { Status = "201", Message = " Create Successfuly"});
+        }
+
+        private async Task SendEmailConfirmationEmail(string email,string emailConfirmationUrl)
+        {
+            var from = new EmailAddress("64123250113@kru.ac.th", "Golf");
+            var to = new EmailAddress(email);
+            var subject = "Thank you";
+            var htmlContent = "Thank you for Register";
+            var emailMessage = MailHelper.CreateSingleEmail(from, to, subject, htmlContent, "WelCome to my Application");
+            await _sendGridClient.SendEmailAsync(emailMessage);
         }
 
     }
