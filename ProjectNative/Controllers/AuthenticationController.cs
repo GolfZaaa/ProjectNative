@@ -90,7 +90,7 @@ namespace ProjectNative.Controllers
             await _userManager.AddToRoleAsync(createuser, registerDto.Role);
             // สร้าง token สำหรับการยืนยันอีเมล์
             var token = Guid.NewGuid().ToString();
-            _memoryCache.Set("Token", "1234", TimeSpan.FromMinutes(2));
+            _memoryCache.Set("Token", token, TimeSpan.FromMinutes(2));
 
             //var token = await _userManager.GenerateEmailConfirmationTokenAsync(createuser);
 
@@ -132,41 +132,17 @@ namespace ProjectNative.Controllers
             }
         }
 
-        [HttpPost("[action]")]
-        public async Task<IActionResult> Login([FromForm] LoginDto loginDto)
-        {
-            var result = await _accountService.LoginAsync(loginDto);
-
-            return Ok(result);
-        }
-
         //[HttpPost("[action]")]
         //public async Task<IActionResult> Login([FromForm] LoginDto loginDto)
         //{
-        //    var check = await _userManager.FindByNameAsync(loginDto.Username);
+        //    var result = await _accountService.LoginAsync(loginDto);
 
-        //    if (check == null || !await _userManager.CheckPasswordAsync(check, loginDto.Password))
-        //    {
-        //        return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "Invalid username or password. Please try again." });
-        //    }
-        //    else
-        //    {
-        //        var otp = Guid.NewGuid().ToString();
-        //        _memoryCache.Set("Otp", otp, TimeSpan.FromMinutes(3));
-        //        await SendEmailConfirmationEmail(check.Email, otp);
-        //    }
-
-
-        //    //if (!string.IsNullOrEmpty(check.Email))
-        //    //{
-        //    //    // สร้าง token สำหรับการยืนยันอีเมล์
-        //    //    var otp = Guid.NewGuid().ToString();
-        //    //    _memoryCache.Set("Otp", otp, TimeSpan.FromMinutes(3));
-        //    //    await SendEmailConfirmationEmail(createuser.Email, token);
-        //    //}
-
-        //    return Ok(check);
+        //    return Ok(result);
         //}
+
+
+
+
 
 
 
