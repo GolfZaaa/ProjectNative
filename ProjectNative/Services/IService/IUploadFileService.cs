@@ -13,5 +13,7 @@
         //อัพโหลดและส่งรายชื่อไฟล์ออกมา
         Task<List<string>> UploadImages(IFormFileCollection formFiles);
 
+        Task DeleteFileImages(List<string> files);
+
     }
 }

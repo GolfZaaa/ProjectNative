@@ -1,18 +1,20 @@
 ﻿
 using Hanssens.Net;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authorization; 
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Linq;
+using ProjectNative.Data;
 using ProjectNative.DTOs;
+using ProjectNative.DTOs.AccConfirm;
 using ProjectNative.Models;
 using ProjectNative.Services;
 using ProjectNative.Services.IService;
 using SendGrid;
-using SendGrid.Helpers.Mail; 
+using SendGrid.Helpers.Mail;
 
 namespace ProjectNative.Controllers
 {
@@ -20,7 +22,7 @@ namespace ProjectNative.Controllers
     [ApiController]
     public class AuthenticationController : ControllerBase
     {
-        LocalStorage storage = new ();
+        LocalStorage storage = new();
         private readonly TokenService _tokenService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IAccountService _accountService;
@@ -29,10 +31,11 @@ namespace ProjectNative.Controllers
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IMemoryCache _memoryCache;
+        private readonly DataContext _dataContext;
 
         public AuthenticationController(TokenService tokenService, UserManager<ApplicationUser> userManager, IAccountService accountService,
             IConfiguration configuration, SendGridClient sendGridClient, RoleManager<IdentityRole> roleManager, IHttpContextAccessor httpContextAccessor,
-            IMemoryCache memoryCache)
+            IMemoryCache memoryCache, DataContext dataContext)
         {
             _tokenService = tokenService;
             _userManager = userManager;
@@ -42,6 +45,7 @@ namespace ProjectNative.Controllers
             _roleManager = roleManager;
             _httpContextAccessor = httpContextAccessor;
             _memoryCache = memoryCache;
+            _dataContext = dataContext;
         }
 
         [HttpGet("[action]")]
@@ -56,11 +60,10 @@ namespace ProjectNative.Controllers
         {
             var result = await _accountService.GetSingleUserAsync(username);
             return Ok(result);
-
         }
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> Register([FromForm] RegisterDto registerDto)
+        public async Task<IActionResult> Register(RegisterDto registerDto)
         {
             var check = await _userManager.FindByEmailAsync(registerDto.Email);
             if (check != null)
@@ -77,6 +80,7 @@ namespace ProjectNative.Controllers
                 UserName = registerDto.Username,
                 Email = registerDto.Email,
                 SecurityStamp = Guid.NewGuid().ToString(),
+                EmailConfirmed = false,
             };
             var result = await _userManager.CreateAsync(createuser, registerDto.Password);
             if (!result.Succeeded)
@@ -90,14 +94,9 @@ namespace ProjectNative.Controllers
             await _userManager.AddToRoleAsync(createuser, registerDto.Role);
             // สร้าง token สำหรับการยืนยันอีเมล์
             var token = Guid.NewGuid().ToString();
-            _memoryCache.Set("Token", token, TimeSpan.FromMinutes(2));
+            _memoryCache.Set("Token", token, TimeSpan.FromDays(1)); 
 
-            //var token = await _userManager.GenerateEmailConfirmationTokenAsync(createuser);
-
-            // เก็บ token ในฐานข้อมูลหรือตารางเฉพาะสำหรับการยืนยันอีเมล์ของผู้ใช้งาน
-            //createuser.EmailConfirmationToken = token;
-
-            await _userManager.UpdateAsync(createuser);
+            await _userManager.UpdateAsync(createuser); 
 
             if (!string.IsNullOrEmpty(token))
             {
@@ -128,28 +127,31 @@ namespace ProjectNative.Controllers
                 var emailMessage = MailHelper.CreateSingleEmail(from, to, subject, htmlContent, htmlContent);
                 await _sendGridClient.SendEmailAsync(emailMessage);
 
-                await ConfirmEmail(email, cachedToken);
+                ConfirmUserDto confirmUserDto = new()
+                {
+                    Email = email,
+                    EmailConfirmationToken = cachedToken
+                };
+
             }
         }
 
-        //[HttpPost("[action]")]
-        //public async Task<IActionResult> Login([FromForm] LoginDto loginDto)
-        //{
-        //    var result = await _accountService.LoginAsync(loginDto);
 
-        //    return Ok(result);
-        //}
+        [HttpPost("[action]")]
+        public async Task<IActionResult> Login(LoginDto loginDto)
+        {
+            var result = await _accountService.LoginAsync(loginDto);
 
-
-
+            return Ok(result);
+        }
 
 
 
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> ConfirmEmail([FromForm] string EmailConfirmationToken, string Email)
+        public async Task<IActionResult> ConfirmEmail(ConfirmUserDto confirmUserDto)
         {
-            var user = await _userManager.FindByEmailAsync(Email);
+            var user = await _userManager.FindByEmailAsync(confirmUserDto.Email);
 
             if (user == null)
             {
@@ -163,19 +165,22 @@ namespace ProjectNative.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "token null." });
             }
 
-            if (string.IsNullOrEmpty(EmailConfirmationToken))
+            if (string.IsNullOrEmpty(confirmUserDto.EmailConfirmationToken))
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "EmailConfirmationToken null ." });
             }
 
             // เช็คว่าโทเค็นที่ผู้ใช้กรอกตรงกับโทเค็นที่เก็บในแคชไหม
-            if (EmailConfirmationToken != token)
+            if (confirmUserDto.EmailConfirmationToken != token)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "Invalid email confirmation token." });
             }
+            else
+            {
+                user.EmailConfirmed = true;
+            }
 
             // อัปเดตสถานะการยืนยันอีเมล์ในฐานข้อมูล
-            user.EmailConfirmed = true;
             await _userManager.UpdateAsync(user);
 
             return StatusCode(StatusCodes.Status200OK, new ResponseReport { Status = "200", Message = "Email confirmed successfully." });
@@ -185,13 +190,11 @@ namespace ProjectNative.Controllers
 
 
         [HttpGet("[action]")]
-        public async Task<IActionResult> check()
+        public async Task<IActionResult> checkSendToEmailToken()
         {
             var data = _memoryCache.Get("Token");
             return Ok(data);
         }
-
-        
 
 
 
@@ -246,10 +249,8 @@ namespace ProjectNative.Controllers
 
         [HttpPost("ChangePassword")]
         [Authorize]
-        public async Task<IActionResult> ChangePasswordAsync(string password, string newPassword)
+        public async Task<IActionResult> ChangePassword(string password, string newPassword)
         {
-            //ใช้ไม่ได้
-            //var user = await _userManager.GetUserAsync(User);
             var user = await _userManager.FindByNameAsync(User.Identity.Name);
             if (user == null)
             {
@@ -260,9 +261,9 @@ namespace ProjectNative.Controllers
             if (!changePasswordResult.Succeeded)
             {
                 // ไม่สามารถเปลี่ยนรหัสผ่านได้
-                return StatusCode(StatusCodes.Status400BadRequest,new ResponseReport { Status = "400" , Message = "The password you entered is incorrect. Please try again." });
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "The password you entered is incorrect. Please try again." });
             }
-            //เช็ค Error
+            //เช็ค Error ถ้ารหัสใหม่กับรหัสเก่าซ้ำกัน
             if (password == newPassword)
             {
                 return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "400", Message = "The new password is the same as the current password you are using. Please enter a password that is different from the current one." });
@@ -283,11 +284,14 @@ namespace ProjectNative.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "User Not Found" });
             }
 
-            if(user.Email == NewEmail)
+            if (user.Email == NewEmail)
             {
                 return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "400", Message = "The new Email is the same as the current Email you are using. Please enter a Email that is different from the current one." });
             }
             var result = await _userManager.SetEmailAsync(user, NewEmail);
+            user.EmailConfirmed = true;
+            await _userManager.UpdateAsync(user);
+
             if (!result.Succeeded)
             {
                 // เกิดข้อผิดพลาดในการตั้งค่าอีเมลใหม่
@@ -298,8 +302,8 @@ namespace ProjectNative.Controllers
         }
 
 
-        [HttpPost("[action]"),Authorize]
-        public async Task<IActionResult> ChangeUserName (string NewUserName)
+        [HttpPost("[action]"), Authorize]
+        public async Task<IActionResult> ChangeUserName(string NewUserName)
         {
             var user = await _userManager.FindByNameAsync(User.Identity.Name);
             if (user == null)
@@ -307,7 +311,7 @@ namespace ProjectNative.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "User Not Found" });
             }
 
-            if(string.IsNullOrEmpty(User.Identity.Name))
+            if (string.IsNullOrEmpty(User.Identity.Name))
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "User Not Found" });
             }
@@ -318,13 +322,13 @@ namespace ProjectNative.Controllers
             }
 
             var result = await _userManager.SetUserNameAsync(user, NewUserName);
-            if(!result.Succeeded)
+            if (!result.Succeeded)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "Fail to SetUserName" });
             }
             return StatusCode(StatusCodes.Status200OK, new ResponseReport { Status = "200", Message = "Change UserName Successfully, please logout and login to get token again" });
         }
- 
+
 
     }
 }

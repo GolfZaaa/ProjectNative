@@ -1,4 +1,5 @@
 ﻿using ProjectNative.DTOs;
+using ProjectNative.DTOs.AccConfirm;
 
 namespace ProjectNative.Services.IService
 {
@@ -10,6 +11,6 @@ namespace ProjectNative.Services.IService
         Object GetMe();
         Task<Object> GetSingleUserAsync(string username);
         Task<Object> DeleteAsync(string username);
-
+        Task<Object> ConfirmEmailAsync(ConfirmUserDto confirmUserDto);
     }
 }

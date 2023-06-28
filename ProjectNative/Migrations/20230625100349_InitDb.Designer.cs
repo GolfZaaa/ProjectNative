@@ -12,7 +12,7 @@ using ProjectNative.Data;
 namespace ProjectNative.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20230613092124_InitDb")]
+    [Migration("20230625100349_InitDb")]
     partial class InitDb
     {
         /// <inheritdoc />
@@ -54,13 +54,13 @@ namespace ProjectNative.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "f56258af-7b39-4d9d-9f06-3d1c1a86254d",
+                            Id = "4ce716e8-6ff5-440b-8c85-78dcea285f22",
                             Name = "Member",
                             NormalizedName = "MEMBER"
                         },
                         new
                         {
-                            Id = "0e4ee50d-0f8e-485e-a8ec-c80e1f85fcfb",
+                            Id = "4ffcb487-6b09-4c7e-8028-eede67540578",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         });
@@ -187,9 +187,6 @@ namespace ProjectNative.Migrations
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("EmailConfirmationToken")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");

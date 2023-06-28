@@ -9,6 +9,8 @@ namespace ProjectNative.DTOs.ProductDto
         public long Price { get; set; }
         public int QuantityInStock { get; set; }
         public string Description { get; set; }
+        public string Type { get; set; }
+
         public List<string> ImageUrls { get; set; }
 
 
@@ -20,6 +22,7 @@ namespace ProjectNative.DTOs.ProductDto
                 Name = product.Name,
                 Price = product.Price,
                 Description = product.Description,
+                Type = product.Type,
                 QuantityInStock = product.QuantityInStock,
                 ImageUrls = product.ProductImages.Select(x => x.Image).ToList()
             };

@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using ProjectNative.DTOs;
+using ProjectNative.DTOs.AccConfirm;
 using ProjectNative.Models;
 using ProjectNative.Services.IService;
 using SendGrid;
@@ -23,15 +26,53 @@ namespace ProjectNative.Services
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly SendGridClient _sendGridClient;
+        private readonly IMemoryCache _memoryCache;
 
         public AccountService(UserManager<ApplicationUser> userManager, TokenService tokenService, IHttpContextAccessor httpContextAccessor, RoleManager<IdentityRole> roleManager,
-            SendGridClient sendGridClient)
+            SendGridClient sendGridClient, IMemoryCache memoryCache)
         {
             _userManager = userManager;
             _tokenService = tokenService;
             _httpContextAccessor = httpContextAccessor;
             _roleManager = roleManager;
             _sendGridClient = sendGridClient;
+            _memoryCache = memoryCache;
+        }
+
+       
+
+        public async Task<object> ConfirmEmailAsync(ConfirmUserDto confirmUserDto)
+        {
+            var user = await _userManager.FindByEmailAsync(confirmUserDto.Email);
+
+            if (user == null)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "Invalid user." });
+            }
+
+            var token = _memoryCache.Get<string>("Token"); // รับค่า token จาก memory cache
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "token null." });
+            }
+
+            if (string.IsNullOrEmpty(confirmUserDto.EmailConfirmationToken))
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "EmailConfirmationToken null ." });
+            }
+
+            // เช็คว่าโทเค็นที่ผู้ใช้กรอกตรงกับโทเค็นที่เก็บในแคชไหม
+            if (confirmUserDto.EmailConfirmationToken != token)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "Invalid email confirmation token." });
+            }
+
+            // อัปเดตสถานะการยืนยันอีเมล์ในฐานข้อมูล
+            user.EmailConfirmed = true;
+            await _userManager.UpdateAsync(user);
+
+            return StatusCode(StatusCodes.Status200OK, new ResponseReport { Status = "200", Message = "Email confirmed successfully." });
         }
 
         public async Task<object> DeleteAsync(string username)
@@ -64,6 +105,7 @@ namespace ProjectNative.Services
         }
 
 
+
         public async Task<object> GetSingleUserAsync(string username)
         {
             var user = await _userManager.FindByNameAsync(username);
@@ -82,7 +124,6 @@ namespace ProjectNative.Services
             var userDetails = new { name, userRole, email, securitystamp, userid };
 
             return userDetails;
-
         }
 
 
@@ -98,9 +139,6 @@ namespace ProjectNative.Services
             return (users);
         }
 
-
-
-
         public async Task<object> LoginAsync(LoginDto loginDto)
         {
             var check = await _userManager.FindByNameAsync(loginDto.Username);
@@ -109,43 +147,50 @@ namespace ProjectNative.Services
             {
                 return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "Invalid username or password. Please try again." });
             }
-            var userDto = new UserDto
-            {
-                Email = check.Email,
-                Token = await _tokenService.GenerateToken(check),
-            };
 
-            return (userDto);
+            if (check.EmailConfirmed == false)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "404", Message = "Please confirm your email for the first login." });
+            }
+            else
+            {
+                var userDto = new UserDto
+                {
+                    Email = check.Email,
+                    Token = await _tokenService.GenerateToken(check),
+                };
+                return (userDto);
+            }
+
+            //var userDto = new UserDto
+            //{
+            //    Email = check.Email,
+            //    Token = await _tokenService.GenerateToken(check),
+            //};
+            //return (userDto);
+
         }
 
         public async Task<object> RegisterAsync(RegisterDto registerDto)
         {
-            // เช็ค error
             var check = await _userManager.FindByEmailAsync(registerDto.Email);
-
             if (check != null)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "404", Message = "This e-mail has already been used." });
             }
-
-            #region ตรวจสอบว่า Role ที่ได้รับมาไม่มีในฐานข้อมูล
             var roleExists = await _roleManager.RoleExistsAsync(registerDto.Role);
             if (!roleExists)
             {
                 return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "404", Message = "The specified role does not exist." });
             }
-            #endregion
-
-            // สร้าง user
             var createuser = new ApplicationUser
             {
                 UserName = registerDto.Username,
                 Email = registerDto.Email,
                 SecurityStamp = Guid.NewGuid().ToString(),
-                
+                EmailConfirmed = false,
             };
             var result = await _userManager.CreateAsync(createuser, registerDto.Password);
-
             if (!result.Succeeded)
             {
                 foreach (var error in result.Errors)
@@ -155,45 +200,51 @@ namespace ProjectNative.Services
                 return ValidationProblem();
             }
             await _userManager.AddToRoleAsync(createuser, registerDto.Role);
+            // สร้าง token สำหรับการยืนยันอีเมล์
+            var token = Guid.NewGuid().ToString();
+            _memoryCache.Set("Token", token, TimeSpan.FromDays(1));
 
+            check.EmailConfirmed = false;
 
-            #region SendGrid
-            //โดยโทเค็นนี้จะถูกใช้ในการยืนยันอีเมล์ผ่าน URL ที่จะส่งให้กับผู้ใช้งานเพื่อให้ผู้ใช้ที่สมัครคลิกเพื่อยืนยันอีเมล์ของตนเอง
-            var emailConfirmationToken = await _userManager.GenerateEmailConfirmationTokenAsync(createuser);
+            await _userManager.UpdateAsync(createuser);
 
-
-            // สร้าง URL ไว้สำหรับยืนยันอีเมล์
-            if (_httpContextAccessor != null && _httpContextAccessor.HttpContext != null && _httpContextAccessor.HttpContext.Request != null)
+            if (!string.IsNullOrEmpty(token))
             {
-                // กำหนดค่า URL ตามที่คุณต้องการ
-                var emailConfirmationUrl = _httpContextAccessor.HttpContext.Request.Scheme + "://" +
-                    _httpContextAccessor.HttpContext.Request.Host +
-                    _httpContextAccessor.HttpContext.Request.PathBase +
-                    Url.Link("ConfirmEmail", new { userId = createuser.Id, token = emailConfirmationToken });
-
                 // ส่งอีเมล์ยืนยันอีเมล์ไปยังผู้ใช้
-                await SendEmailConfirmationEmail(createuser.Email, emailConfirmationUrl);
+                await SendEmailConfirmationEmail(createuser.Email, token);
             }
             else
             {
-                // กรณีไม่พบ HttpContext หรือ Request ให้จัดการตามที่เหมาะสม
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "Error" });
+                // กรณีไม่ได้รับค่า emailConfirmationUrl ที่ถูกต้อง
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "ไม่ได้รับค่า emailConfirmationUrl ที่ถูกต้อง" });
             }
-
-            // ส่งอีเมล์ยืนยันอีเมล์ไปยังผู้ใช้
-            #endregion
-
-            return StatusCode(StatusCodes.Status201Created,new ResponseReport { Status = "201", Message = " Create Successfuly"});
+            return StatusCode(StatusCodes.Status201Created, new ResponseReport { Status = "201", Message = "Create Successfully" });
         }
 
-        private async Task SendEmailConfirmationEmail(string email,string emailConfirmationUrl)
+        private async Task SendEmailConfirmationEmail(string email, string token)
         {
-            var from = new EmailAddress("64123250113@kru.ac.th", "Golf");
-            var to = new EmailAddress(email);
-            var subject = "Thank you";
-            var htmlContent = "Thank you for Register";
-            var emailMessage = MailHelper.CreateSingleEmail(from, to, subject, htmlContent, "WelCome to my Application");
-            await _sendGridClient.SendEmailAsync(emailMessage);
+            var cachedToken = _memoryCache.Get<string>("Token");
+            if (!string.IsNullOrEmpty(cachedToken))
+            {
+                // ส่งอีเมล์ยืนยันอีเมล์ไปยังผู้ใช้
+                var from = new EmailAddress("64123250113@kru.ac.th", "Golf");
+                var to = new EmailAddress(email);
+                var subject = "Thank you";
+
+                var htmlContent = $"<p>Thank you for registering! Please confirm your email address by using the following token:</p>";
+                htmlContent += $"<p><strong>{cachedToken}</strong></p>";
+
+                var emailMessage = MailHelper.CreateSingleEmail(from, to, subject, htmlContent, htmlContent);
+                await _sendGridClient.SendEmailAsync(emailMessage);
+
+                ConfirmUserDto confirmUserDto = new()
+                {
+                    Email = email,
+                    EmailConfirmationToken = cachedToken
+                };
+
+                await ConfirmEmailAsync(confirmUserDto);
+            }
         }
 
     }

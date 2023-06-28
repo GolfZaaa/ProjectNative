@@ -17,7 +17,7 @@ namespace ProjectNative.Controllers
             _productService = productService;
         }
 
-        [HttpGet]
+        [HttpGet("[action]")]
         public async Task<IActionResult> Get()
         {
             var result = await _productService.GetProductListAsync();
@@ -29,7 +29,8 @@ namespace ProjectNative.Controllers
         [HttpPost("[action]")]
         public async Task<IActionResult> AddProduct([FromForm] ProductRequest request)
         {
-            await _productService.CreateAsync(request);
+            var result = await _productService.CreateAsync(request);
+            if (result != null) return BadRequest(result);
             return Ok();
         }
 
@@ -46,9 +47,11 @@ namespace ProjectNative.Controllers
         {
             var result = await _productService.GetByIdAsync((int)productRequest.Id);
             if (result == null) return NotFound();
-            await _productService.UpdateAsync(productRequest);
+            var resultUpdate = await _productService.UpdateAsync(productRequest);
+            if (resultUpdate != null) return BadRequest(resultUpdate);
             return Ok();
         }
+
 
 
         [HttpDelete("{id}")]

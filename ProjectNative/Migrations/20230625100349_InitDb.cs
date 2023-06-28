@@ -32,7 +32,6 @@ namespace ProjectNative.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    EmailConfirmationToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -296,8 +295,8 @@ namespace ProjectNative.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { "0e4ee50d-0f8e-485e-a8ec-c80e1f85fcfb", null, "Admin", "ADMIN" },
-                    { "f56258af-7b39-4d9d-9f06-3d1c1a86254d", null, "Member", "MEMBER" }
+                    { "4ce716e8-6ff5-440b-8c85-78dcea285f22", null, "Member", "MEMBER" },
+                    { "4ffcb487-6b09-4c7e-8028-eede67540578", null, "Admin", "ADMIN" }
                 });
 
             migrationBuilder.InsertData(
