@@ -88,12 +88,22 @@ namespace ProjectNative.Services
             return result;
         }
 
+
+
+
+
         public async Task<List<Product>> GetProductListAsync()
         {
             var result = await _dataContex.Products.Include(p => p.ProductImages)
                 .OrderByDescending(p => p.Id).ToListAsync();
             return result;
         }
+
+
+
+
+
+
 
 
         public async Task<List<string>> GetTypeAsync()

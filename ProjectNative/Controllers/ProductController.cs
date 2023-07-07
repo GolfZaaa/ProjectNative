@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using ProjectNative.DTOs.ProductDto;
+using ProjectNative.DTOs.ProductDto.Response;
 using ProjectNative.Services;
 using ProjectNative.Services.IService;
 
@@ -17,6 +18,10 @@ namespace ProjectNative.Controllers
             _productService = productService;
         }
 
+
+
+
+
         [HttpGet("[action]")]
         public async Task<IActionResult> Get()
         {
@@ -25,6 +30,13 @@ namespace ProjectNative.Controllers
 
             return Ok(response);
         }
+
+
+
+
+
+
+
 
         [HttpPost("[action]")]
         public async Task<IActionResult> AddProduct([FromForm] ProductRequest request)

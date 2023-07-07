@@ -10,7 +10,6 @@ using Microsoft.Identity.Client;
 using Org.BouncyCastle.Utilities;
 using ProjectNative.Data;
 using ProjectNative.DTOs.CartDto;
-using ProjectNative.DTOs.ProductDto;
 using ProjectNative.Models;
 using ProjectNative.Models.CartAccount;
 using ProjectNative.Models.OrderAccount;
@@ -20,6 +19,11 @@ using System.Security.Claims;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using Response = ProjectNative.Models.ResponseReport;
+using System.Collections;
+using ProjectNative.Services;
+using System.Linq;
+using ProjectNative.DTOs.ProductDto.Response;
+using ProjectNative.Extenstions;
 
 namespace ProjectNative.Controllers
 {
@@ -33,7 +37,7 @@ namespace ProjectNative.Controllers
         private readonly ICartUsersService _cartUsersService;
 
         public CartUserController(DataContext dataContext, IHttpContextAccessor httpContextAccessor,
-            UserManager<ApplicationUser> userManager,ICartUsersService cartUsersService)
+            UserManager<ApplicationUser> userManager, ICartUsersService cartUsersService)
         {
             _dataContext = dataContext;
             _httpContextAccessor = httpContextAccessor;
@@ -52,19 +56,55 @@ namespace ProjectNative.Controllers
             return Ok(result);
         }
 
-        [HttpGet]
+
+        [HttpGet("[action]")]
         public async Task<IActionResult> GetCart()
         {
+            var carts = await _dataContext.Carts
+                .Include(a => a.Items)
+                    .ThenInclude(b => b.Product)
+                        .ThenInclude(p => p.ProductImages)
+                         .ToListAsync();
 
-            var cart = await _dataContext.Carts.Include(a=>a.UserId).ToListAsync();
+            var cartResponses = carts.Select(cart => cart.ToCartResponse()).ToList();
 
-            return Ok(cart);
-
-            //var result = _userManager.FindByNameAsync(User.Identity.Name);
-            ////var cart = _dataContext.Carts.FirstOrDefaultAsync(x=>x.UserId == result.Result.Id);
-            //var userName = User.FindFirstValue(ClaimTypes.Name);
-            //return Ok(userName);
+            return Ok(cartResponses);
         }
+
+
+
+
+
+
+
+        [HttpGet("[action]")]
+        public async Task<IActionResult> GetCartByUsername([FromQuery] GetCartUserDto getCartUser)
+        {
+            var user = await _userManager.FindByEmailAsync(getCartUser.email);
+            if (user == null)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "Username Not Found" });
+            }
+
+            var cart = await _dataContext.Carts
+                .Include(c => c.Items)
+                    .ThenInclude(i => i.Product)
+                        .ThenInclude(a => a.ProductImages)
+                .SingleOrDefaultAsync(c => c.UserId == user.Id);
+
+            if (cart == null)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "Cart Not Found" });
+            }
+
+            var cartResponse = cart.ToCartResponse();
+
+            return Ok(cartResponse);
+        }
+
+
+
+
 
 
         [HttpDelete("[action]")]
@@ -72,7 +112,7 @@ namespace ProjectNative.Controllers
         public async Task<IActionResult> DeleteItemToCart(int productId, int amount)
         {
             var item = Items.FirstOrDefault(item => item.ProductId == productId);
-            
+
             if (item == null)
             {
                 return BadRequest();
@@ -99,10 +139,8 @@ namespace ProjectNative.Controllers
                 return StatusCode(StatusCodes.Status400BadRequest, new Response { Status = "400", Message = "User not Found" });
             }
 
-
             var order = new Order
             {
-                Id = GenerateID(),
                 UserId = userId,
                 OrderDate = DateTime.Now,
             };
@@ -114,15 +152,19 @@ namespace ProjectNative.Controllers
                     ProductId = item.Product.Id,
                     Quantity = item.Amount,
                     Price = item.Product.Price,
-                    OrderId = order.Id, // กำหนดค่า OrderId ให้กับ OrderItem
+                    Order = order
                 };
                 order.OrderItems.Add(orderItem);
             }
             order.TotalAmount = order.GetTotalAmount(); // กำหนดค่า TotalAmount
-            // ทำสิ่งที่ต้องการกับ order (เช่นบันทึกลงฐานข้อมูล)
             _dataContext.Orders.Add(order);
             await _dataContext.SaveChangesAsync();
-            return Ok(order); // หรือส่ง HTTP response อื่นๆ ที่เหมาะสม
+
+            _dataContext.Carts.RemoveRange(cart);
+
+            await _dataContext.SaveChangesAsync();
+
+            return Ok(order);
         }
 
         private async Task<Cart> RetrieveCart(string accountId)

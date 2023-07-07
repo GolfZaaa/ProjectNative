@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectNative.Data;
 using ProjectNative.DTOs.CartDto;
+using ProjectNative.DTOs.ProductDto.Response;
 using ProjectNative.Models;
 using ProjectNative.Models.CartAccount;
 using ProjectNative.Services.IService;
@@ -68,6 +69,36 @@ namespace ProjectNative.Services
                    .SingleOrDefaultAsync(x => x.UserId == accountId);
             return cart;
         }
+
+
+
+        public async Task<object> GetCartByUsernameAsync(GetCartUserDto getCartUser)
+        {
+            var user = await _userManager.FindByEmailAsync(getCartUser.email);
+            if (user == null)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "Username Not Found" });
+            }
+            var cart = await _dataContext.Carts
+                .Include(c => c.Items)
+                    .ThenInclude(i => i.Product)
+                .SingleOrDefaultAsync(c => c.UserId == user.Id);
+            if (cart == null)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "Cart Not Found" });
+            }
+            // แปลงข้อมูลใน cart ให้เป็น ProductResponse
+            var productResponses = cart.Items.Select(item => ProductResponse.FromProduct(item.Product)).ToList();
+            // สร้างตัวแปรเก็บข้อมูลการตอบกลับ
+            var response = new
+            {
+                CartId = cart.Id,
+                UserId = cart.UserId,
+                Products = productResponses
+            };
+            return response;
+        }
+
 
 
     }

@@ -12,7 +12,7 @@ namespace ProjectNative.Models.OrderAccount
         public Product Product { get; set; }
         public int Quantity { get; set; } 
         public long Price { get; set; }
-        public string OrderId { get; set; }
+        public int OrderId { get; set; }
         [JsonIgnore]
         public Order Order { get; set; }
     }

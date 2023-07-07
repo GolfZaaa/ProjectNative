@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ProjectNative.Migrations
 {
     /// <inheritdoc />
-    public partial class InitDb : Migration
+    public partial class initdb : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -199,7 +199,8 @@ namespace ProjectNative.Migrations
                 name: "Orders",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     OrderDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     TotalAmount = table.Column<long>(type: "bigint", nullable: false)
@@ -271,7 +272,7 @@ namespace ProjectNative.Migrations
                     ProductId = table.Column<int>(type: "int", nullable: false),
                     Quantity = table.Column<int>(type: "int", nullable: false),
                     Price = table.Column<long>(type: "bigint", nullable: false),
-                    OrderId = table.Column<string>(type: "nvarchar(450)", nullable: false)
+                    OrderId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -295,8 +296,8 @@ namespace ProjectNative.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { "4ce716e8-6ff5-440b-8c85-78dcea285f22", null, "Member", "MEMBER" },
-                    { "4ffcb487-6b09-4c7e-8028-eede67540578", null, "Admin", "ADMIN" }
+                    { "005d77b2-61c9-4408-a422-e6ef4278b8a8", null, "Admin", "ADMIN" },
+                    { "02e731cf-febd-4414-9126-43cfa9c4384e", null, "Member", "MEMBER" }
                 });
 
             migrationBuilder.InsertData(

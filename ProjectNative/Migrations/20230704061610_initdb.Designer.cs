@@ -12,8 +12,8 @@ using ProjectNative.Data;
 namespace ProjectNative.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20230625100349_InitDb")]
-    partial class InitDb
+    [Migration("20230704061610_initdb")]
+    partial class initdb
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -54,13 +54,13 @@ namespace ProjectNative.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "4ce716e8-6ff5-440b-8c85-78dcea285f22",
+                            Id = "02e731cf-febd-4414-9126-43cfa9c4384e",
                             Name = "Member",
                             NormalizedName = "MEMBER"
                         },
                         new
                         {
-                            Id = "4ffcb487-6b09-4c7e-8028-eede67540578",
+                            Id = "005d77b2-61c9-4408-a422-e6ef4278b8a8",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         });
@@ -285,8 +285,11 @@ namespace ProjectNative.Migrations
 
             modelBuilder.Entity("ProjectNative.Models.OrderAccount.Order", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
@@ -313,9 +316,8 @@ namespace ProjectNative.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("OrderId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("OrderId")
+                        .HasColumnType("int");
 
                     b.Property<long>("Price")
                         .HasColumnType("bigint");

@@ -10,6 +10,7 @@ using Newtonsoft.Json.Linq;
 using ProjectNative.Data;
 using ProjectNative.DTOs;
 using ProjectNative.DTOs.AccConfirm;
+using ProjectNative.DTOs.Address;
 using ProjectNative.Models;
 using ProjectNative.Services;
 using ProjectNative.Services.IService;
@@ -94,9 +95,9 @@ namespace ProjectNative.Controllers
             await _userManager.AddToRoleAsync(createuser, registerDto.Role);
             // สร้าง token สำหรับการยืนยันอีเมล์
             var token = Guid.NewGuid().ToString();
-            _memoryCache.Set("Token", token, TimeSpan.FromDays(1)); 
+            _memoryCache.Set("Token", token, TimeSpan.FromDays(1));
 
-            await _userManager.UpdateAsync(createuser); 
+            await _userManager.UpdateAsync(createuser);
 
             if (!string.IsNullOrEmpty(token))
             {
@@ -244,6 +245,51 @@ namespace ProjectNative.Controllers
 
             return Ok(userData);
         }
+
+        [HttpPost("address")]
+        [Authorize]
+        public async Task<IActionResult> AddAddress(AdressDto model)
+        {
+            if (ModelState.IsValid)
+            {
+                var user = await _userManager.FindByNameAsync(User.Identity.Name);
+                if (user == null)
+                {
+                    return NotFound();
+                }
+
+                // Check if the user already has an address
+                if (user.Addresses != null && user.Addresses.Count > 0)
+                {
+                    return StatusCode(StatusCodes.Status409Conflict, new ResponseReport { Status = "409", Message = "User already has an address" });
+                }
+
+                var address = new Address
+                {
+                    Street = model.Street,
+                    District = model.District,
+                    City = model.City,
+                    PostalCode = model.PostalCode
+                };
+
+                // Add address to the user's addresses
+                user.Addresses = new List<Address> { address };
+                var result = await _userManager.UpdateAsync(user);
+                if (result.Succeeded)
+                {
+                    return StatusCode(StatusCodes.Status200OK, new ResponseReport { Status = "200", Message = "Add Address Success" });
+                }
+                else
+                {
+                    // Address addition failed
+                    return BadRequest(result.Errors);
+                }
+            }
+            // Invalid model state
+            return BadRequest(ModelState);
+        }
+
+
 
 
 

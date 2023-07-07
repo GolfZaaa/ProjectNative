@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using ProjectNative.DTOs.ProductDto;
+using ProjectNative.DTOs.ProductDto.Response;
 using ProjectNative.Models;
 
 namespace ProjectNative

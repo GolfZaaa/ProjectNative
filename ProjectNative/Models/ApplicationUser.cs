@@ -8,5 +8,6 @@ namespace ProjectNative.Models
 {
     public class ApplicationUser : IdentityUser
     {
+        public List<Address> Addresses { get; set; }
     }
 }
