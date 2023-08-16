@@ -9,11 +9,11 @@ namespace ProjectNative.Services
 {
     public class ProductService : IProductService
     {
-        private readonly IUploadFileService _uploadFileService;
+        private readonly IUploadFileServiceProduct _uploadFileService;
         private readonly DataContext _dataContex;
         private readonly IMapper _mapper;
 
-        public ProductService(IUploadFileService uploadFileService, DataContext dataContex, IMapper mapper)
+        public ProductService(IUploadFileServiceProduct uploadFileService, DataContext dataContex, IMapper mapper)
         {
             _uploadFileService = uploadFileService;
             _dataContex = dataContex;

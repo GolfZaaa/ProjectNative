@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using ProjectNative.Data;
+using ProjectNative.DTOs.OrderDto;
 using ProjectNative.Models;
 using ProjectNative.Models.OrderAccount;
+using SendGrid.Helpers.Mail;
 
 namespace ProjectNative.Controllers
 {
@@ -30,7 +32,9 @@ namespace ProjectNative.Controllers
                 .Select(o => new
                 {
                     o.Id,
-                    o.UserId,
+                    o.AddressId,
+                    o.Address,
+                    o.ClientSecret,
                     o.OrderDate,
                     OrderItem = o.OrderItems.Select(o => new
                     {
@@ -46,6 +50,22 @@ namespace ProjectNative.Controllers
             return Ok(order);
         }
 
+        [HttpPost("[action]")]
+        public async Task<IActionResult> GetOrdersByUsername(CreateOrderDTO orderDTO)
+        {
+            //var address = await _dataContext.Addresses.FirstOrDefaultAsync(a => a.Id == orderDTO.AddressId);
+
+            var user = await _userManager.Users.FirstOrDefaultAsync(a => a.UserName == orderDTO.UserName);
+
+            var orders = await _dataContext.Orders
+                .Include(o => o.OrderItems)
+                .Include(a => a.Address)
+                .Where(o => o.Address.UserId == user.Id)
+                .ToListAsync();
+            return Ok(orders);
+        }
+
+ 
 
 
     }

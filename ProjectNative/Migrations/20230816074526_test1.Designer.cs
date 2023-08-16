@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProjectNative.Data;
 
@@ -11,9 +12,11 @@ using ProjectNative.Data;
 namespace ProjectNative.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20230816074526_test1")]
+    partial class test1
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,13 +54,13 @@ namespace ProjectNative.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "c093d428-8cc3-4c67-ad99-30db870f9081",
+                            Id = "379acb86-e3ea-4012-87cf-84ae0b275420",
                             Name = "Member",
                             NormalizedName = "MEMBER"
                         },
                         new
                         {
-                            Id = "5afad4fc-1dac-425e-89b4-e73c7a5d8dee",
+                            Id = "44be81a2-c863-4883-84e0-3b29676d59bd",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         });
@@ -334,9 +337,6 @@ namespace ProjectNative.Migrations
 
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("OrderImage")
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("OrderStatus")
                         .HasColumnType("int");

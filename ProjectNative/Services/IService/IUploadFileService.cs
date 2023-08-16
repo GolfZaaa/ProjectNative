@@ -3,17 +3,15 @@
     public interface IUploadFileService
     {
         //ตรวจสอบมีการอัพโหลดไฟล์เข้ามาหรือไม่
-        bool IsUpload(IFormFileCollection formFiles);
-
+        bool IsUpload(IFormFile formFile);
 
         //ตรวจสอบนามสกุลไฟล์หรือรูปแบบที่่ต้องการ
-        string Validation(IFormFileCollection formFiles);
-
+        string Validation(IFormFile formFile);
 
         //อัพโหลดและส่งรายชื่อไฟล์ออกมา
-        Task<List<string>> UploadImages(IFormFileCollection formFiles);
+        Task <string> UploadImages(IFormFile formFile);
 
-        Task DeleteFileImages(List<string> files);
+        Task DeleteFileImages(string file);
 
     }
 }

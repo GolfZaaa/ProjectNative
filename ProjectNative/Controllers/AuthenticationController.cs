@@ -1,9 +1,9 @@
-﻿
-using Hanssens.Net;
+﻿using Hanssens.Net;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json.Linq;
@@ -16,6 +16,7 @@ using ProjectNative.Services;
 using ProjectNative.Services.IService;
 using SendGrid;
 using SendGrid.Helpers.Mail;
+using Stripe;
 
 namespace ProjectNative.Controllers
 {
@@ -24,7 +25,7 @@ namespace ProjectNative.Controllers
     public class AuthenticationController : ControllerBase
     {
         LocalStorage storage = new();
-        private readonly TokenService _tokenService;
+        private readonly Services.TokenService _tokenService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IAccountService _accountService;
         private readonly IConfiguration _configuration;
@@ -34,7 +35,7 @@ namespace ProjectNative.Controllers
         private readonly IMemoryCache _memoryCache;
         private readonly DataContext _dataContext;
 
-        public AuthenticationController(TokenService tokenService, UserManager<ApplicationUser> userManager, IAccountService accountService,
+        public AuthenticationController(Services.TokenService tokenService, UserManager<ApplicationUser> userManager, IAccountService accountService,
             IConfiguration configuration, SendGridClient sendGridClient, RoleManager<IdentityRole> roleManager, IHttpContextAccessor httpContextAccessor,
             IMemoryCache memoryCache, DataContext dataContext)
         {
@@ -56,86 +57,59 @@ namespace ProjectNative.Controllers
             return Ok(result);
         }
 
-        [HttpGet("[action]")]
-        public async Task<IActionResult> GetSingleUser(string username)
+        [HttpPost("[action]")]
+        public async Task<IActionResult> GetSingleUser(UserNameDto dto)
         {
-            var result = await _accountService.GetSingleUserAsync(username);
+            var result = await _accountService.GetSingleUserAsync(dto);
             return Ok(result);
         }
 
         [HttpPost("[action]")]
         public async Task<IActionResult> Register(RegisterDto registerDto)
         {
-            var check = await _userManager.FindByEmailAsync(registerDto.Email);
-            if (check != null)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "404", Message = "This e-mail has already been used." });
-            }
-            var roleExists = await _roleManager.RoleExistsAsync(registerDto.Role);
-            if (!roleExists)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "404", Message = "The specified role does not exist." });
-            }
-            var createuser = new ApplicationUser
-            {
-                UserName = registerDto.Username,
-                Email = registerDto.Email,
-                SecurityStamp = Guid.NewGuid().ToString(),
-                EmailConfirmed = false,
-            };
-            var result = await _userManager.CreateAsync(createuser, registerDto.Password);
-            if (!result.Succeeded)
-            {
-                foreach (var error in result.Errors)
-                {
-                    ModelState.AddModelError(error.Code, error.Description);
-                }
-                return ValidationProblem();
-            }
-            await _userManager.AddToRoleAsync(createuser, registerDto.Role);
-            // สร้าง token สำหรับการยืนยันอีเมล์
-            var token = Guid.NewGuid().ToString();
-            _memoryCache.Set("Token", token, TimeSpan.FromDays(1));
-
-            await _userManager.UpdateAsync(createuser);
-
-            if (!string.IsNullOrEmpty(token))
-            {
-                // ส่งอีเมล์ยืนยันอีเมล์ไปยังผู้ใช้
-                await SendEmailConfirmationEmail(createuser.Email, token);
-            }
-            else
-            {
-                // กรณีไม่ได้รับค่า emailConfirmationUrl ที่ถูกต้อง
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "ไม่ได้รับค่า emailConfirmationUrl ที่ถูกต้อง" });
-            }
-            return StatusCode(StatusCodes.Status201Created, new ResponseReport { Status = "201", Message = "Create Successfully" });
+            var result = await _accountService.RegisterAsync(registerDto);
+            return Ok(result);
         }
 
-        private async Task SendEmailConfirmationEmail(string email, string token)
+        //private async Task SendEmailConfirmationEmail(string email, string token)
+        //{
+        //    var cachedToken = _memoryCache.Get<string>("Token");
+        //    if (!string.IsNullOrEmpty(cachedToken))
+        //    {
+        //        // ส่งอีเมล์ยืนยันอีเมล์ไปยังผู้ใช้
+        //        var from = new EmailAddress("64123250113@kru.ac.th", "Golf");
+        //        var to = new EmailAddress(email);
+        //        var subject = "Thank you";
+
+        //        var htmlContent = $"<p>Thank you for registering! Please confirm your email address by using the following token:</p>";
+        //        htmlContent += $"<p><strong>{cachedToken}</strong></p>";
+
+        //        var emailMessage = MailHelper.CreateSingleEmail(from, to, subject, htmlContent, htmlContent);
+        //        await _sendGridClient.SendEmailAsync(emailMessage);
+
+        //        ConfirmUserDto confirmUserDto = new()
+        //        {
+        //            Email = email,
+        //            EmailConfirmationToken = cachedToken
+        //        };
+
+        //    }
+        //}
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> ConfirmEmail(ConfirmUserDto confirmUserDto)
         {
-            var cachedToken = _memoryCache.Get<string>("Token");
-            if (!string.IsNullOrEmpty(cachedToken))
-            {
-                // ส่งอีเมล์ยืนยันอีเมล์ไปยังผู้ใช้
-                var from = new EmailAddress("64123250113@kru.ac.th", "Golf");
-                var to = new EmailAddress(email);
-                var subject = "Thank you";
-
-                var htmlContent = $"<p>Thank you for registering! Please confirm your email address by using the following token:</p>";
-                htmlContent += $"<p><strong>{cachedToken}</strong></p>";
-
-                var emailMessage = MailHelper.CreateSingleEmail(from, to, subject, htmlContent, htmlContent);
-                await _sendGridClient.SendEmailAsync(emailMessage);
-
-                ConfirmUserDto confirmUserDto = new()
-                {
-                    Email = email,
-                    EmailConfirmationToken = cachedToken
-                };
-
-            }
+            var result = await _accountService.ConfirmEmailAsync(confirmUserDto);
+            return Ok(result);
         }
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> ResendConfirmEmail(ResendEmailconfirmDto dto)
+        {
+            var result = await _accountService.ResendConfirmEmailAsync(dto);
+            return Ok(result);
+        }
+
 
 
         [HttpPost("[action]")]
@@ -148,48 +122,6 @@ namespace ProjectNative.Controllers
 
 
 
-
-        [HttpPost("[action]")]
-        public async Task<IActionResult> ConfirmEmail(ConfirmUserDto confirmUserDto)
-        {
-            var user = await _userManager.FindByEmailAsync(confirmUserDto.Email);
-
-            if (user == null)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "Invalid user." });
-            }
-
-            var token = _memoryCache.Get<string>("Token"); // รับค่า token จาก memory cache
-
-            if (string.IsNullOrEmpty(token))
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "token null." });
-            }
-
-            if (string.IsNullOrEmpty(confirmUserDto.EmailConfirmationToken))
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "EmailConfirmationToken null ." });
-            }
-
-            // เช็คว่าโทเค็นที่ผู้ใช้กรอกตรงกับโทเค็นที่เก็บในแคชไหม
-            if (confirmUserDto.EmailConfirmationToken != token)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "Invalid email confirmation token." });
-            }
-            else
-            {
-                user.EmailConfirmed = true;
-            }
-
-            // อัปเดตสถานะการยืนยันอีเมล์ในฐานข้อมูล
-            await _userManager.UpdateAsync(user);
-
-            return StatusCode(StatusCodes.Status200OK, new ResponseReport { Status = "200", Message = "Email confirmed successfully." });
-        }
-
-
-
-
         [HttpGet("[action]")]
         public async Task<IActionResult> checkSendToEmailToken()
         {
@@ -198,95 +130,11 @@ namespace ProjectNative.Controllers
         }
 
 
-
-
-        [HttpDelete("[action]")]
-        public async Task<IActionResult> Delete([FromForm] string username)
+        [HttpPost("[action]")]
+        public async Task<IActionResult> DeleteUser([FromBody] DeleteUserDto dto)
         {
-            var result = await _accountService.DeleteAsync(username);
+            var result = await _accountService.DeleteAsync(dto);
             return Ok(result);
-        }
-
-
-        [HttpGet("[action]"), Authorize]
-        public async Task<IActionResult> GetMyName()
-        {
-            var userName = User.Identity.Name;
-            if (string.IsNullOrEmpty(userName))
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "User Not Found" });
-            }
-
-            var user = await _userManager.FindByNameAsync(userName);
-            if (user == null)
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "User Not Found" });
-            }
-
-            var roles = await _userManager.GetRolesAsync(user);
-            var iduser = await _userManager.GetUserIdAsync(user);
-
-            var userEmail = await _userManager.GetEmailAsync(user);
-
-            var accessToken = await HttpContext.GetTokenAsync("access_token");
-            if (accessToken == null)
-            {
-                accessToken = "Not Login";
-            }
-
-            var userData = new
-            {
-                user.UserName,
-                roles,
-                userEmail,
-                iduser,
-                accessToken
-            };
-
-            return Ok(userData);
-        }
-
-        [HttpPost("address")]
-        [Authorize]
-        public async Task<IActionResult> AddAddress(AdressDto model)
-        {
-            if (ModelState.IsValid)
-            {
-                var user = await _userManager.FindByNameAsync(User.Identity.Name);
-                if (user == null)
-                {
-                    return NotFound();
-                }
-
-                // Check if the user already has an address
-                if (user.Addresses != null && user.Addresses.Count > 0)
-                {
-                    return StatusCode(StatusCodes.Status409Conflict, new ResponseReport { Status = "409", Message = "User already has an address" });
-                }
-
-                var address = new Address
-                {
-                    Street = model.Street,
-                    District = model.District,
-                    City = model.City,
-                    PostalCode = model.PostalCode
-                };
-
-                // Add address to the user's addresses
-                user.Addresses = new List<Address> { address };
-                var result = await _userManager.UpdateAsync(user);
-                if (result.Succeeded)
-                {
-                    return StatusCode(StatusCodes.Status200OK, new ResponseReport { Status = "200", Message = "Add Address Success" });
-                }
-                else
-                {
-                    // Address addition failed
-                    return BadRequest(result.Errors);
-                }
-            }
-            // Invalid model state
-            return BadRequest(ModelState);
         }
 
 
@@ -294,86 +142,167 @@ namespace ProjectNative.Controllers
 
 
         [HttpPost("ChangePassword")]
-        [Authorize]
-        public async Task<IActionResult> ChangePassword(string password, string newPassword)
+        public async Task<IActionResult> ChangePassword(ChangePasswordDto dto)
         {
-            var user = await _userManager.FindByNameAsync(User.Identity.Name);
-            if (user == null)
-            {
-                // ไม่พบผู้ใช้ที่เข้าสู่ระบบ
-                return Unauthorized();
-            }
-            var changePasswordResult = await _userManager.ChangePasswordAsync(user, password, newPassword);
-            if (!changePasswordResult.Succeeded)
-            {
-                // ไม่สามารถเปลี่ยนรหัสผ่านได้
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "The password you entered is incorrect. Please try again." });
-            }
-            //เช็ค Error ถ้ารหัสใหม่กับรหัสเก่าซ้ำกัน
-            if (password == newPassword)
-            {
-                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "400", Message = "The new password is the same as the current password you are using. Please enter a password that is different from the current one." });
-            }
-            // เปลี่ยนรหัสผ่านสำเร็จ
-            return Ok(StatusCode(StatusCodes.Status200OK, new ResponseReport { Status = "200", Message = "ChangePassword Successfuly" }));
+            var result = await _accountService.ChangePasswordAsync(dto);
+            return Ok(result);
+        }
+
+
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> ForgetPassword (ForgetPasswordDto dto)
+        {
+            var result = await _accountService.ForgetPasswordAsync(dto);
+            return Ok(result);
         }
 
 
         [HttpPost("ChangeEmail")]
-        [Authorize]
-        public async Task<IActionResult> ChangeUserEmail(string NewEmail)
+        public async Task<IActionResult> ChangeUserEmail(ChangeUserEmailDto dto)
         {
-            var user = await _userManager.FindByNameAsync(User.Identity.Name);
-            if (user == null)
-            {
-                // หา User ไม่เจอ
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "User Not Found" });
-            }
-
-            if (user.Email == NewEmail)
-            {
-                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "400", Message = "The new Email is the same as the current Email you are using. Please enter a Email that is different from the current one." });
-            }
-            var result = await _userManager.SetEmailAsync(user, NewEmail);
-            user.EmailConfirmed = true;
-            await _userManager.UpdateAsync(user);
-
-            if (!result.Succeeded)
-            {
-                // เกิดข้อผิดพลาดในการตั้งค่าอีเมลใหม่
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "Fail to SetEmail" });
-            }
-
-            return StatusCode(StatusCodes.Status200OK, new ResponseReport { Status = "200", Message = "Change Email Successfuly" });
+            var result = await _accountService.ChangeUserEmailAsync(dto);
+            return Ok(result);
         }
 
 
-        [HttpPost("[action]"), Authorize]
-        public async Task<IActionResult> ChangeUserName(string NewUserName)
+        [HttpPost("[action]")]
+        public async Task<IActionResult> ChangeUserName(ChangeUserNameDto dto)
         {
-            var user = await _userManager.FindByNameAsync(User.Identity.Name);
+            var result = await _accountService.ChangeUserNameAsync(dto);
+            return Ok(result);
+        }
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> CreateAddress(AdressDto address)
+        {
+            var result = await _accountService.CreateAddressAsync(address);
+            return Ok(result);
+        }
+
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> PostUserAddress([FromBody] UseridDto dto)
+        {
+            var result = await _accountService.PostUserAddressAsync(dto);
+            return Ok(result);
+        }
+
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> SendMessageToForgotPassword(SendMessageToForgotPasswordDto dto)
+        {
+            var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null)
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "User Not Found" });
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "Invalid user." });
             }
 
-            if (string.IsNullOrEmpty(User.Identity.Name))
-            {
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "User Not Found" });
-            }
+            Random random = new Random();
+            int randomNumber = random.Next(1000, 9999);
+            string tokenforgotpassword = randomNumber.ToString();
+            _memoryCache.Set("ForgotPassword", tokenforgotpassword, TimeSpan.FromDays(1));
 
-            if (user.UserName == NewUserName)
+            if (!string.IsNullOrEmpty(tokenforgotpassword))
             {
-                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "400", Message = "The new UserName is the same as the current UserName you are using. Please enter a UserName that is different from the current one." });
+                // ส่งอีเมล์ยืนยันอีเมล์ไปยังผู้ใช้
+                await SendEmailForgotPassword(dto.Email, tokenforgotpassword);
             }
-
-            var result = await _userManager.SetUserNameAsync(user, NewUserName);
-            if (!result.Succeeded)
+            else
             {
-                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "Fail to SetUserName" });
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "ไม่ได้รับค่า SendEmailForgotPassword ที่ถูกต้อง" });
             }
-            return StatusCode(StatusCodes.Status200OK, new ResponseReport { Status = "200", Message = "Change UserName Successfully, please logout and login to get token again" });
+            return StatusCode(StatusCodes.Status200OK, new ResponseReport { Status = "200", Message = "Success to SendEmail for Forgotpassword" });
         }
+
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> ResendConfirmForgotPassword(ResendConfirmForgotPasswordDto dto)
+        {
+            _memoryCache.Remove("ForgotPassword");
+            Random random = new Random();
+            int randomNumber = random.Next(1000, 9999);
+            string tokenforgotpassword = randomNumber.ToString();
+            _memoryCache.Set("ForgotPassword", tokenforgotpassword, TimeSpan.FromDays(1));
+
+            if (!string.IsNullOrEmpty(tokenforgotpassword))
+            {
+                // ส่งอีเมล์ยืนยันอีเมล์ไปยังผู้ใช้
+                await SendEmailForgotPassword(dto.Email, tokenforgotpassword);
+            }
+            else
+            {
+                // กรณีไม่ได้รับค่า emailConfirmationUrl ที่ถูกต้อง
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "ไม่ได้รับค่า emailConfirmationUrl ที่ถูกต้อง" });
+            }
+            return StatusCode(StatusCodes.Status202Accepted);
+        }
+
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> ConfirmEmailToForgotPassword(ConfirmForgotPasswordDto dto)
+        {
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+
+            if (user == null)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "Invalid user." });
+            }
+
+            var token = _memoryCache.Get<string>("ForgotPassword"); // รับค่า token จาก memory cache
+
+            if (string.IsNullOrEmpty(token))
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "token null." });
+            }
+
+            if (string.IsNullOrEmpty(dto.ConfirmForgotPassowrd))
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "EmailConfirmationToken null ." });
+            }
+
+            // เช็คว่าโทเค็นที่ผู้ใช้กรอกตรงกับโทเค็นที่เก็บในแคชไหม
+            if (dto.ConfirmForgotPassowrd != token)
+            {
+                return StatusCode(StatusCodes.Status400BadRequest, new ResponseReport { Status = "400", Message = "Invalid email confirmation token." });
+            }
+            return StatusCode(StatusCodes.Status200OK, new ResponseReport { Status = "200", Message = "Confirmed token successfully go to ResetPassword." });
+        }
+
+        private async Task SendEmailForgotPassword(string email, string token)
+        {
+            var cachedTokenforgotpassword = _memoryCache.Get<string>("ForgotPassword");
+            if (!string.IsNullOrEmpty(cachedTokenforgotpassword))
+            {
+                // ส่งอีเมล์ยืนยันอีเมล์ไปยังผู้ใช้
+                var from = new EmailAddress("64123250113@kru.ac.th", "Golf");
+                var to = new EmailAddress(email);
+                var subject = "ForgotPassword";
+
+                var htmlContent = "<div style=\"text-align: center;\">";
+                htmlContent += "<p><strong><h1 style=\"font-size:2em; \">Forgot Password</h1></strong></p>";
+                htmlContent += "<p>Enter the email address you used when you joined and we’ll send you instructions to reset your password.</p>";
+                htmlContent += $"<p><strong><h1 style=\"font-size:4em; \">{cachedTokenforgotpassword}</h1></strong></p>";
+                htmlContent += "</div>";
+
+                var emailMessage = MailHelper.CreateSingleEmail(from, to, subject, htmlContent, htmlContent);
+                await _sendGridClient.SendEmailAsync(emailMessage);
+
+                ConfirmForgotPasswordDto dto = new()
+                {
+                    Email = email,
+                    ConfirmForgotPassowrd = cachedTokenforgotpassword
+                };
+            }
+        }
+
+        [HttpGet("[action]")]
+        public async Task<IActionResult> CheckEmailForgotPassword()
+        {
+            var data = _memoryCache.Get("ForgotPassword");
+            return Ok(data);
+        }
+
 
 
     }

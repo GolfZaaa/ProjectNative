@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProjectNative.Data;
 
@@ -11,9 +12,11 @@ using ProjectNative.Data;
 namespace ProjectNative.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20230726045217_initdb")]
+    partial class initdb
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,13 +54,13 @@ namespace ProjectNative.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "c093d428-8cc3-4c67-ad99-30db870f9081",
+                            Id = "6ffae015-4c8a-4e05-aa76-21c0f8418b7a",
                             Name = "Member",
                             NormalizedName = "MEMBER"
                         },
                         new
                         {
-                            Id = "5afad4fc-1dac-425e-89b4-e73c7a5d8dee",
+                            Id = "9823994e-dd91-41ec-82c4-84408717da58",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         });
@@ -177,6 +180,10 @@ namespace ProjectNative.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("District")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -185,11 +192,7 @@ namespace ProjectNative.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Province")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SubDistrict")
+                    b.Property<string>("Street")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -334,12 +337,6 @@ namespace ProjectNative.Migrations
 
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("OrderImage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("OrderStatus")
-                        .HasColumnType("int");
 
                     b.Property<string>("PaymentIntentId")
                         .HasColumnType("nvarchar(max)");

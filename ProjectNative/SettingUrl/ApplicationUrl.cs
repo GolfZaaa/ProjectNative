@@ -2,6 +2,6 @@
 {
     public static class ApplicationUrl
     { 
-        public static string Url { get; set; } = "https://cec0-2403-6200-8860-c842-dc3c-c806-40fc-b893.ngrok-free.app";
+        public static string Url { get; set; } = "https://716b-125-27-156-102.ngrok-free.app";
     }
 }

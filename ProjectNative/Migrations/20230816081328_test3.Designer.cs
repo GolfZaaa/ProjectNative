@@ -12,8 +12,8 @@ using ProjectNative.Data;
 namespace ProjectNative.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20230704061610_initdb")]
-    partial class initdb
+    [Migration("20230816081328_test3")]
+    partial class test3
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -54,13 +54,13 @@ namespace ProjectNative.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "02e731cf-febd-4414-9126-43cfa9c4384e",
+                            Id = "c093d428-8cc3-4c67-ad99-30db870f9081",
                             Name = "Member",
                             NormalizedName = "MEMBER"
                         },
                         new
                         {
-                            Id = "005d77b2-61c9-4408-a422-e6ef4278b8a8",
+                            Id = "5afad4fc-1dac-425e-89b4-e73c7a5d8dee",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         });
@@ -172,6 +172,41 @@ namespace ProjectNative.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("ProjectNative.Models.Address", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("District")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PostalCode")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Province")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("SubDistrict")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Addresses");
+                });
+
             modelBuilder.Entity("ProjectNative.Models.ApplicationUser", b =>
                 {
                     b.Property<string>("Id")
@@ -245,6 +280,9 @@ namespace ProjectNative.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -291,19 +329,30 @@ namespace ProjectNative.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AddressId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ClientSecret")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("OrderImage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OrderStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PaymentIntentId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<long>("TotalAmount")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("AddressId");
 
                     b.ToTable("Orders");
                 });
@@ -465,6 +514,17 @@ namespace ProjectNative.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ProjectNative.Models.Address", b =>
+                {
+                    b.HasOne("ProjectNative.Models.ApplicationUser", "User")
+                        .WithMany("Addresses")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ProjectNative.Models.CartAccount.Cart", b =>
                 {
                     b.HasOne("ProjectNative.Models.ApplicationUser", "User")
@@ -497,13 +557,13 @@ namespace ProjectNative.Migrations
 
             modelBuilder.Entity("ProjectNative.Models.OrderAccount.Order", b =>
                 {
-                    b.HasOne("ProjectNative.Models.ApplicationUser", "User")
+                    b.HasOne("ProjectNative.Models.Address", "Address")
                         .WithMany()
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("AddressId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("Address");
                 });
 
             modelBuilder.Entity("ProjectNative.Models.OrderAccount.OrderItem", b =>
@@ -534,6 +594,11 @@ namespace ProjectNative.Migrations
                         .IsRequired();
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("ProjectNative.Models.ApplicationUser", b =>
+                {
+                    b.Navigation("Addresses");
                 });
 
             modelBuilder.Entity("ProjectNative.Models.CartAccount.Cart", b =>

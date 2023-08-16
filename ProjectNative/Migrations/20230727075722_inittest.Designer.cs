@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProjectNative.Data;
 
@@ -11,9 +12,11 @@ using ProjectNative.Data;
 namespace ProjectNative.Migrations
 {
     [DbContext(typeof(DataContext))]
-    partial class DataContextModelSnapshot : ModelSnapshot
+    [Migration("20230727075722_inittest")]
+    partial class inittest
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,13 +54,13 @@ namespace ProjectNative.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "c093d428-8cc3-4c67-ad99-30db870f9081",
+                            Id = "8910c767-c636-4c9b-97ec-d663b2680fd4",
                             Name = "Member",
                             NormalizedName = "MEMBER"
                         },
                         new
                         {
-                            Id = "5afad4fc-1dac-425e-89b4-e73c7a5d8dee",
+                            Id = "e27734e7-cf8e-48fd-915a-752039ffae23",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         });
@@ -334,12 +337,6 @@ namespace ProjectNative.Migrations
 
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("OrderImage")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("OrderStatus")
-                        .HasColumnType("int");
 
                     b.Property<string>("PaymentIntentId")
                         .HasColumnType("nvarchar(max)");

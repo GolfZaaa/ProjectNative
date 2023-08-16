@@ -13,6 +13,7 @@ namespace ProjectNative.Models.CartAccount
         [JsonIgnore]
         public ApplicationUser User { get; set; }
 
+        public decimal TotalPrice { get; set; }
 
 
 
@@ -39,7 +40,6 @@ namespace ProjectNative.Models.CartAccount
             item.Amount -= amount; //ลบสินค้าออกตามจำนวนที่ส่งมา
             if (item.Amount <= 0) Items.Remove(item); //ถ้าจำนวนสินค้ามันเป็น 0 หรือน้อยกว่า ให้ลบสินค้านั้นทิ้งไป
         }
-
 
 
 

@@ -47,7 +47,7 @@ namespace ProjectNative.Services
                 Cart cart = new Cart { Id = GenerateID(), UserId = addCartDTO.userid };
                 await _dataContext.Carts.AddAsync(cart);
                 await _dataContext.SaveChangesAsync();
-                shopCart = cart; // Set the value of shopCart to the newly created cart
+                shopCart = cart; 
             }
             shopCart.AddItem(product, addCartDTO.amount);
             try
@@ -74,7 +74,7 @@ namespace ProjectNative.Services
 
         public async Task<object> GetCartByUsernameAsync(GetCartUserDto getCartUser)
         {
-            var user = await _userManager.FindByEmailAsync(getCartUser.email);
+            var user = await _userManager.FindByNameAsync(getCartUser.userid);
             if (user == null)
             {
                 return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "Username Not Found" });

@@ -2,6 +2,6 @@
 {
     public class GetCartUserDto
     {
-        public string email { get; set; }
+        public string userid { get; set; }
     }
 }

@@ -13,51 +13,73 @@ namespace ProjectNative.Services
             _webHostEnvironment = webHostEnvironment;
             _configuration = configuration;
         }
-        public bool IsUpload(IFormFileCollection formFiles)
+          
+        public Task DeleteFileImages(string files)
         {
-            return formFiles != null && formFiles?.Count > 0;
-        }
-
-        public async Task<List<string>> UploadImages(IFormFileCollection formFiles)
-        {
-            var listFileName = new List<string>();
-            //จัดการเส้นทาง
             string wwwRootPath = _webHostEnvironment.WebRootPath;
-            var uploadPath = Path.Combine(wwwRootPath, "images");
-            if (!Directory.Exists(uploadPath)) Directory.CreateDirectory(uploadPath);
-            foreach (var formFile in formFiles)
+
+            var file = Path.Combine("orderImage", files);
+            var oldImagePath = Path.Combine(wwwRootPath, file);
+            if (System.IO.File.Exists(oldImagePath))
             {
-                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(formFile.FileName);
-                string fullName = Path.Combine(uploadPath, fileName);
-                using (var stream = File.Create(fullName))
+                System.IO.File.Delete(oldImagePath);
+            }
+
+            return Task.CompletedTask;
+        }
+         
+        public bool IsUpload(IFormFile formFiles)
+        {
+            return formFiles != null;
+        }
+         
+        public async Task<string> UploadImages(IFormFile formFile)
+        {
+            string fileName = null;
+
+            if (formFile != null && formFile.Length > 0)
+            {
+                // Handle file upload
+                string wwwRootPath = _webHostEnvironment.WebRootPath;
+                string uploadPath = Path.Combine(wwwRootPath, "orderImage");
+
+                if (!Directory.Exists(uploadPath))
+                {
+                    Directory.CreateDirectory(uploadPath);
+                }
+
+                fileName = Guid.NewGuid().ToString() + Path.GetExtension(formFile.FileName);
+                string filePath = Path.Combine(uploadPath, fileName);
+
+                using (var stream = File.Create(filePath))
                 {
                     await formFile.CopyToAsync(stream);
                 }
-                listFileName.Add(fileName);
             }
-            return listFileName;
+
+            return fileName;
         }
 
-        public string Validation(IFormFileCollection formFiles)
+        public string Validation(IFormFile formFile)
         {
-            foreach (var file in formFiles)
+            if (!ValidationExtension(formFile.FileName))
             {
-                if (!ValidationExtension(file.FileName))
-                {
-                    return "Invalid File Extension";
-                }
-                if (!ValidationSize(file.Length))
-                {
-                    return "The file is too large";
-                }
+                return "Invalid File Extension";
             }
+
+            if (!ValidationSize(formFile.Length))
+            {
+                return "The file is too large";
+            }
+
             return null;
         }
 
         public bool ValidationExtension(string filename)
         {
-            string[] permittedExtensions = { ".jpg", ".png" };
+            string[] permittedExtensions = { ".jpg", ".png", ".jpeg" }; // สามารถเพิ่มชื่อไฟล์ได้เลย
             string extension = Path.GetExtension(filename).ToLowerInvariant();
+
             if (string.IsNullOrEmpty(extension) || !permittedExtensions.Contains(extension))
             {
                 return false;
@@ -65,24 +87,7 @@ namespace ProjectNative.Services
             return true;
         }
 
-        public bool ValidationSize(long fileSize) => _configuration.GetValue<long>("FileSizeLimit") > fileSize;
-
-
-        public Task DeleteFileImages(List<string> files)
-        {
-            string wwwRootPath = _webHostEnvironment.WebRootPath;
-            foreach (var item in files)
-            {
-                var file = Path.Combine("images", item);
-                var oldImagePath = Path.Combine(wwwRootPath, file);
-                if (System.IO.File.Exists(oldImagePath))
-                {
-                    System.IO.File.Delete(oldImagePath);
-                }
-            }
-            return Task.CompletedTask;
-        }
-
-
+        public bool ValidationSize(long fileSize)
+            => _configuration.GetValue<long>("FileSizeLimit") > fileSize;
     }
 }

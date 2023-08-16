@@ -12,8 +12,8 @@ using ProjectNative.Data;
 namespace ProjectNative.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20230706075714_i")]
-    partial class i
+    [Migration("20230816075020_test2")]
+    partial class test2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -54,13 +54,13 @@ namespace ProjectNative.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "1148461a-7d59-4d89-9efe-7d32b0995431",
+                            Id = "ec69415e-d6b0-4a90-b1ce-3aa6a018a845",
                             Name = "Member",
                             NormalizedName = "MEMBER"
                         },
                         new
                         {
-                            Id = "5defc334-a2b4-46dd-942d-277b1f622be6",
+                            Id = "c2f2bd7f-09d6-4c89-9683-08185800cc09",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         });
@@ -180,13 +180,6 @@ namespace ProjectNative.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ApplicationUserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("City")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("District")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -195,13 +188,21 @@ namespace ProjectNative.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("Street")
+                    b.Property<string>("Province")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("SubDistrict")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("ApplicationUserId");
+                    b.HasIndex("UserId");
 
                     b.ToTable("Addresses");
                 });
@@ -279,6 +280,9 @@ namespace ProjectNative.Migrations
                     b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
 
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -325,19 +329,27 @@ namespace ProjectNative.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("AddressId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ClientSecret")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("OrderStatus")
+                        .HasColumnType("int");
+
+                    b.Property<string>("PaymentIntentId")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<long>("TotalAmount")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("AddressId");
 
                     b.ToTable("Orders");
                 });
@@ -501,9 +513,13 @@ namespace ProjectNative.Migrations
 
             modelBuilder.Entity("ProjectNative.Models.Address", b =>
                 {
-                    b.HasOne("ProjectNative.Models.ApplicationUser", null)
+                    b.HasOne("ProjectNative.Models.ApplicationUser", "User")
                         .WithMany("Addresses")
-                        .HasForeignKey("ApplicationUserId");
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ProjectNative.Models.CartAccount.Cart", b =>
@@ -538,13 +554,13 @@ namespace ProjectNative.Migrations
 
             modelBuilder.Entity("ProjectNative.Models.OrderAccount.Order", b =>
                 {
-                    b.HasOne("ProjectNative.Models.ApplicationUser", "User")
+                    b.HasOne("ProjectNative.Models.Address", "Address")
                         .WithMany()
-                        .HasForeignKey("UserId")
+                        .HasForeignKey("AddressId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.Navigation("Address");
                 });
 
             modelBuilder.Entity("ProjectNative.Models.OrderAccount.OrderItem", b =>

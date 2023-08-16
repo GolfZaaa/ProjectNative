@@ -72,6 +72,7 @@ builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartUsersService, CartUsersService>();
 builder.Services.AddScoped<IUploadFileService, UploadFileService>();
+builder.Services.AddScoped<IUploadFileServiceProduct, UploadFileServiceProduct>();
 builder.Services.AddMemoryCache();
 
 
@@ -100,15 +101,10 @@ builder.Services.AddAuthorization();
 #endregion
 
 
-var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
-builder.Services.AddCors(options => options.AddPolicy(name: MyAllowSpecificOrigins,
-    policy =>
-    {
-        policy.AllowAnyOrigin()
-        .AllowAnyMethod().
-        AllowAnyHeader();
-    }));
-
+builder.Services.AddCors(p => p.AddPolicy("corsapp", builder =>
+{
+    builder.WithOrigins("*").AllowAnyMethod().AllowAnyHeader();
+}));
 
 var app = builder.Build();
 
@@ -139,7 +135,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
-app.UseCors(MyAllowSpecificOrigins);
+app.UseCors("corsapp");
 
 
 app.UseAuthentication();

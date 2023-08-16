@@ -18,7 +18,7 @@ namespace ProjectNative.Extenstions
                     {
                         Id = item.Id,
                         Amount = item.Amount,
-                        Product = FromProduct(item.Product)
+                        Product = FromProduct(item.Product),
                     };
                 }
                 else
@@ -32,7 +32,8 @@ namespace ProjectNative.Extenstions
                 Id = cart.Id,
                 Items = cartItems,
                 Created = cart.Created,
-                UserId = cart.UserId
+                UserId = cart.UserId,
+                TotalPrice = cart.TotalPrice,
             };
         }
 
