@@ -12,6 +12,7 @@ namespace ProjectNative.Models
         public int QuantityInStock { get; set; }
         public string? Description { get; set; }
         public long Calorie { get; set; }
+        public string? Image { get; set; }
 
         [JsonIgnore]
         public List<ProductImage> ProductImages { get; set; }

@@ -20,6 +20,8 @@ namespace ProjectNative.DTOs.ProductDto
         [Required]
         public long Calorie { get; set; }
         public IFormFileCollection? FormFiles { get; set; }
+        public IFormFile? FormFile { get; set; }
+
 
     }
 }

@@ -12,22 +12,37 @@ namespace ProjectNative.Services
         private readonly IUploadFileServiceProduct _uploadFileService;
         private readonly DataContext _dataContex;
         private readonly IMapper _mapper;
+        private readonly IUploadFileService _uploadFileOnlyService;
 
-        public ProductService(IUploadFileServiceProduct uploadFileService, DataContext dataContex, IMapper mapper)
+        public ProductService(IUploadFileServiceProduct uploadFileService, DataContext dataContex, IMapper mapper, IUploadFileService uploadFileOnlyService)
         {
             _uploadFileService = uploadFileService;
             _dataContex = dataContex;
             _mapper = mapper;
+            _uploadFileOnlyService = uploadFileOnlyService;
         }
 
         public async Task<string> CreateAsync(ProductRequest request)
         {
-            //อัพโหลดไฟล์
             (string errorMessage, List<string> imageNames) = await UploadImageAsync(request.FormFiles);
             if (!string.IsNullOrEmpty(errorMessage)) return errorMessage;
+
+            (string errorMessag, string imageName) = await UploadOnlyImageMainAsync(request.FormFile);
+            if (!string.IsNullOrEmpty(errorMessag)) return errorMessag;
+
             var result = _mapper.Map<Product>(request);
+
+           
+
+            if (!string.IsNullOrEmpty(imageName))
+            {
+                result.Image = imageName;
+            }
+
             await _dataContex.Products.AddAsync(result);
             await _dataContex.SaveChangesAsync();
+
+
             //จัดการไฟล์ในฐานข้อมูล
             if (imageNames.Count > 0)
             {
@@ -39,6 +54,7 @@ namespace ProjectNative.Services
                 await _dataContex.ProductImages.AddRangeAsync(images);
             }
             await _dataContex.SaveChangesAsync();
+
             return null;
         }
 
@@ -57,6 +73,24 @@ namespace ProjectNative.Services
             }
             return (errorMessage, imageNames);
         }
+
+        private async Task<(string errorMessge, string imageNames)> UploadOnlyImageMainAsync(IFormFile formfile)
+        {
+            var errorMessg = string.Empty;
+            var imageName = string.Empty;
+
+            if (_uploadFileOnlyService.IsUpload(formfile))
+            {
+                errorMessg = _uploadFileOnlyService.Validation(formfile);
+                if (errorMessg is null)
+                {
+                    imageName = await _uploadFileOnlyService.UploadImages(formfile);
+                }
+            }
+
+            return (errorMessg, imageName);
+        }
+
 
 
 

@@ -14,6 +14,7 @@ namespace ProjectNative.DTOs.ProductDto.Response
         public string Description { get; set; }
         public string Type { get; set; }
         public long Calorie { get; set; }
+        public string? Image { get; set; }
 
         public List<string> ImageUrls { get; set; }
         public List<Review> Reviews { get; set; }
@@ -35,6 +36,7 @@ namespace ProjectNative.DTOs.ProductDto.Response
                 Calorie = product.Calorie,
                 ImageUrls = imageUrls,
                 Reviews = product.Reviews,
+                Image = product.Image
             };
         }
 
