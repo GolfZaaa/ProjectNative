@@ -1,5 +1,7 @@
 ﻿using ProjectNative.Models;
+using ProjectNative.Models.ReviewProduct;
 using ProjectNative.SettingUrl;
+using System.Collections.Generic;
 
 namespace ProjectNative.DTOs.ProductDto.Response
 {
@@ -14,11 +16,14 @@ namespace ProjectNative.DTOs.ProductDto.Response
         public long Calorie { get; set; }
 
         public List<string> ImageUrls { get; set; }
+        public List<Review> Reviews { get; set; }
 
 
         static public ProductResponse FromProduct(Product product)
         {
             var imageUrls = product.ProductImages.Select(a => !string.IsNullOrEmpty(a.Image) ? $"{ApplicationUrl.Url}/images/{a.Image}" : "").ToList();
+            
+
             return new ProductResponse
             {
                 Id = product.Id,
@@ -28,7 +33,8 @@ namespace ProjectNative.DTOs.ProductDto.Response
                 Type = product.Type,
                 QuantityInStock = product.QuantityInStock,
                 Calorie = product.Calorie,
-                ImageUrls = imageUrls
+                ImageUrls = imageUrls,
+                Reviews = product.Reviews,
             };
         }
 

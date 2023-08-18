@@ -7,7 +7,7 @@
 namespace ProjectNative.Migrations
 {
     /// <inheritdoc />
-    public partial class inittest : Migration
+    public partial class Star : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,30 +15,27 @@ namespace ProjectNative.Migrations
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "6ffae015-4c8a-4e05-aa76-21c0f8418b7a");
+                keyValue: "05b9f3c5-a346-4743-b024-8d5f3e771491");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "9823994e-dd91-41ec-82c4-84408717da58");
+                keyValue: "6e00c980-15c8-456f-9bdf-412c2e37a5a6");
 
-            migrationBuilder.RenameColumn(
-                name: "Street",
-                table: "Addresses",
-                newName: "SubDistrict");
-
-            migrationBuilder.RenameColumn(
-                name: "City",
-                table: "Addresses",
-                newName: "Province");
+            migrationBuilder.AddColumn<int>(
+                name: "Star",
+                table: "Reviews",
+                type: "int",
+                nullable: false,
+                defaultValue: 0);
 
             migrationBuilder.InsertData(
                 table: "AspNetRoles",
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { "8910c767-c636-4c9b-97ec-d663b2680fd4", null, "Member", "MEMBER" },
-                    { "e27734e7-cf8e-48fd-915a-752039ffae23", null, "Admin", "ADMIN" }
+                    { "2a1894d6-a118-4769-9935-2294f759aa8a", null, "Member", "MEMBER" },
+                    { "f297c161-aef3-47b9-8edf-65947f46d0d0", null, "Admin", "ADMIN" }
                 });
         }
 
@@ -48,30 +45,24 @@ namespace ProjectNative.Migrations
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "8910c767-c636-4c9b-97ec-d663b2680fd4");
+                keyValue: "2a1894d6-a118-4769-9935-2294f759aa8a");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "e27734e7-cf8e-48fd-915a-752039ffae23");
+                keyValue: "f297c161-aef3-47b9-8edf-65947f46d0d0");
 
-            migrationBuilder.RenameColumn(
-                name: "SubDistrict",
-                table: "Addresses",
-                newName: "Street");
-
-            migrationBuilder.RenameColumn(
-                name: "Province",
-                table: "Addresses",
-                newName: "City");
+            migrationBuilder.DropColumn(
+                name: "Star",
+                table: "Reviews");
 
             migrationBuilder.InsertData(
                 table: "AspNetRoles",
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { "6ffae015-4c8a-4e05-aa76-21c0f8418b7a", null, "Member", "MEMBER" },
-                    { "9823994e-dd91-41ec-82c4-84408717da58", null, "Admin", "ADMIN" }
+                    { "05b9f3c5-a346-4743-b024-8d5f3e771491", null, "Member", "MEMBER" },
+                    { "6e00c980-15c8-456f-9bdf-412c2e37a5a6", null, "Admin", "ADMIN" }
                 });
         }
     }

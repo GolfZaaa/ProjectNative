@@ -65,26 +65,6 @@ namespace ProjectNative.Controllers
         }
 
 
-        [HttpGet("[action]")]
-        public async Task<IActionResult> GetCart()
-        {
-            var carts = await _dataContext.Carts
-                .Include(a => a.Items)
-                    .ThenInclude(b => b.Product)
-                        .ThenInclude(p => p.ProductImages)
-                         .ToListAsync();
-
-            var cartResponses = carts.Select(cart => cart.ToCartResponse()).ToList();
-
-            return Ok(cartResponses);
-        }
-
-
-
-
-
-
-
         [HttpPost("[action]")]
         public async Task<IActionResult> GetCartByUsername([FromBody] GetCartUserDto getCartUser)
         {
@@ -246,16 +226,15 @@ namespace ProjectNative.Controllers
             }
             else
             {
-                (string errorMessgeMain, string imageName) =
+                (string errorMessgeMain, string imageNames) =
                 await UploadImageMainAsync(orderDTO.OrderImage);
-                order.OrderImage = imageName;
+                order.OrderImage = imageNames;
             }
             await _dataContext.SaveChangesAsync();
             return Ok(order);
         }
 
-        [HttpPost("[action]")]
-        public async Task<(string errorMessge, string imageNames)> UploadImageMainAsync(IFormFile formfile)
+        private async Task<(string errorMessge, string imageNames)> UploadImageMainAsync(IFormFile formfile)
         {
             var errorMessge = string.Empty;
             var imageName = string.Empty;

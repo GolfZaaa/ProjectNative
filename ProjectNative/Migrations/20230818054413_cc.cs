@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+﻿using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -7,7 +8,7 @@
 namespace ProjectNative.Migrations
 {
     /// <inheritdoc />
-    public partial class test3 : Migration
+    public partial class cc : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,26 +16,27 @@ namespace ProjectNative.Migrations
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "c2f2bd7f-09d6-4c89-9683-08185800cc09");
+                keyValue: "4f445cb8-db04-4790-a07d-528a5fb8278e");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "ec69415e-d6b0-4a90-b1ce-3aa6a018a845");
+                keyValue: "7b25fe92-6870-4503-9745-5bfee617af41");
 
-            migrationBuilder.AddColumn<string>(
-                name: "OrderImage",
-                table: "Orders",
-                type: "nvarchar(max)",
-                nullable: true);
+            migrationBuilder.AddColumn<DateTime>(
+                name: "Date",
+                table: "Reviews",
+                type: "datetime2",
+                nullable: false,
+                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
 
             migrationBuilder.InsertData(
                 table: "AspNetRoles",
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { "5afad4fc-1dac-425e-89b4-e73c7a5d8dee", null, "Admin", "ADMIN" },
-                    { "c093d428-8cc3-4c67-ad99-30db870f9081", null, "Member", "MEMBER" }
+                    { "05b9f3c5-a346-4743-b024-8d5f3e771491", null, "Member", "MEMBER" },
+                    { "6e00c980-15c8-456f-9bdf-412c2e37a5a6", null, "Admin", "ADMIN" }
                 });
         }
 
@@ -44,24 +46,24 @@ namespace ProjectNative.Migrations
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "5afad4fc-1dac-425e-89b4-e73c7a5d8dee");
+                keyValue: "05b9f3c5-a346-4743-b024-8d5f3e771491");
 
             migrationBuilder.DeleteData(
                 table: "AspNetRoles",
                 keyColumn: "Id",
-                keyValue: "c093d428-8cc3-4c67-ad99-30db870f9081");
+                keyValue: "6e00c980-15c8-456f-9bdf-412c2e37a5a6");
 
             migrationBuilder.DropColumn(
-                name: "OrderImage",
-                table: "Orders");
+                name: "Date",
+                table: "Reviews");
 
             migrationBuilder.InsertData(
                 table: "AspNetRoles",
                 columns: new[] { "Id", "ConcurrencyStamp", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { "c2f2bd7f-09d6-4c89-9683-08185800cc09", null, "Admin", "ADMIN" },
-                    { "ec69415e-d6b0-4a90-b1ce-3aa6a018a845", null, "Member", "MEMBER" }
+                    { "4f445cb8-db04-4790-a07d-528a5fb8278e", null, "Admin", "ADMIN" },
+                    { "7b25fe92-6870-4503-9745-5bfee617af41", null, "Member", "MEMBER" }
                 });
         }
     }

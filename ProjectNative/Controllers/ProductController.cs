@@ -27,16 +27,8 @@ namespace ProjectNative.Controllers
         {
             var result = await _productService.GetProductListAsync();
             var response = result.Select(ProductResponse.FromProduct).ToList();
-
             return Ok(response);
         }
-
-
-
-
-
-
-
 
         [HttpPost("[action]")]
         public async Task<IActionResult> AddProduct([FromForm] ProductRequest request)

@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using ProjectNative.Models.ReviewProduct;
+using System.Text.Json.Serialization;
 
 namespace ProjectNative.Models
 {
@@ -14,5 +15,7 @@ namespace ProjectNative.Models
 
         [JsonIgnore]
         public List<ProductImage> ProductImages { get; set; }
+        [JsonIgnore]
+        public List<Review> Reviews { get; set; }
     }
 }

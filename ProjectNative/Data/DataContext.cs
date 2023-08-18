@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using ProjectNative.Models;
 using ProjectNative.Models.CartAccount;
 using ProjectNative.Models.OrderAccount;
+using ProjectNative.Models.ReviewProduct;
 using System.Reflection.Emit;
 
 namespace ProjectNative.Data
@@ -40,6 +41,9 @@ namespace ProjectNative.Data
 
         public DbSet<Product> Products { get; set; }
         public DbSet<ProductImage> ProductImages { get; set; }
+        public DbSet<ReviewImage> ReviewImages { get; set; }
+        public DbSet<Review> Reviews { get; set; }
+
         public DbSet<Cart> Carts { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<Address> Addresses { get; set; }

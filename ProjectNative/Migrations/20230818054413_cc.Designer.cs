@@ -12,8 +12,8 @@ using ProjectNative.Data;
 namespace ProjectNative.Migrations
 {
     [DbContext(typeof(DataContext))]
-    [Migration("20230816081328_test3")]
-    partial class test3
+    [Migration("20230818054413_cc")]
+    partial class cc
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -54,13 +54,13 @@ namespace ProjectNative.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "c093d428-8cc3-4c67-ad99-30db870f9081",
+                            Id = "05b9f3c5-a346-4743-b024-8d5f3e771491",
                             Name = "Member",
                             NormalizedName = "MEMBER"
                         },
                         new
                         {
-                            Id = "5afad4fc-1dac-425e-89b4-e73c7a5d8dee",
+                            Id = "6e00c980-15c8-456f-9bdf-412c2e37a5a6",
                             Name = "Admin",
                             NormalizedName = "ADMIN"
                         });
@@ -463,6 +463,35 @@ namespace ProjectNative.Migrations
                     b.ToTable("ProductImages");
                 });
 
+            modelBuilder.Entity("ProjectNative.Models.ReviewProduct.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Texts")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("Reviews");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -596,6 +625,17 @@ namespace ProjectNative.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("ProjectNative.Models.ReviewProduct.Review", b =>
+                {
+                    b.HasOne("ProjectNative.Models.Product", "Product")
+                        .WithMany("Reviews")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("ProjectNative.Models.ApplicationUser", b =>
                 {
                     b.Navigation("Addresses");
@@ -614,6 +654,8 @@ namespace ProjectNative.Migrations
             modelBuilder.Entity("ProjectNative.Models.Product", b =>
                 {
                     b.Navigation("ProductImages");
+
+                    b.Navigation("Reviews");
                 });
 #pragma warning restore 612, 618
         }
