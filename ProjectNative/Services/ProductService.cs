@@ -24,24 +24,30 @@ namespace ProjectNative.Services
 
         public async Task<string> CreateAsync(ProductRequest request)
         {
+            //หลายรูป Start
             (string errorMessage, List<string> imageNames) = await UploadImageAsync(request.FormFiles);
             if (!string.IsNullOrEmpty(errorMessage)) return errorMessage;
+            //หลายรูป End
 
+            //รูปเดียว Start
             (string errorMessag, string imageName) = await UploadOnlyImageMainAsync(request.FormFile);
             if (!string.IsNullOrEmpty(errorMessag)) return errorMessag;
+            //รูปเดียว End
 
             var result = _mapper.Map<Product>(request);
 
-           
 
+            //รูปเดียว Start
             if (!string.IsNullOrEmpty(imageName))
             {
                 result.Image = imageName;
             }
+            //รูปเดียว End
 
             await _dataContex.Products.AddAsync(result);
             await _dataContex.SaveChangesAsync();
 
+            //หลายรูป Start
 
             //จัดการไฟล์ในฐานข้อมูล
             if (imageNames.Count > 0)
@@ -53,6 +59,8 @@ namespace ProjectNative.Services
                 }
                 await _dataContex.ProductImages.AddRangeAsync(images);
             }
+            //หลายรูป End
+
             await _dataContex.SaveChangesAsync();
 
             return null;

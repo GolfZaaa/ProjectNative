@@ -71,13 +71,15 @@ namespace ProjectNative.Controllers
             {
                 return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "Product Not Found" });
             }
+
+            var Datetimenow = DateTime.Now; 
             
             var newReview = new Models.ReviewProduct.Review
             {
                 Texts = dto.Texts,
-                Date = dto.Date,
                 UserId = user.Id, 
                 ProductId = product.Id,
+                Date = Datetimenow,                
                 Star = dto.Star,
                 ReviewImages = imageNames.Select(imageName => new ReviewImage { Image = imageName }).ToList()
             };

@@ -1,4 +1,6 @@
-﻿using ProjectNative.Models;
+﻿using Microsoft.IdentityModel.Tokens;
+using ProjectNative.DTOs.ReviewDto;
+using ProjectNative.Models;
 using ProjectNative.Models.ReviewProduct;
 using ProjectNative.SettingUrl;
 using System.Collections.Generic;
@@ -17,13 +19,18 @@ namespace ProjectNative.DTOs.ProductDto.Response
         public string? Image { get; set; }
 
         public List<string> ImageUrls { get; set; }
-        public List<Review> Reviews { get; set; }
-
+        public List<ReviewResponse> Reviews { get; set; }
 
         static public ProductResponse FromProduct(Product product)
         {
             var imageUrls = product.ProductImages.Select(a => !string.IsNullOrEmpty(a.Image) ? $"{ApplicationUrl.Url}/images/{a.Image}" : "").ToList();
-            
+
+            var image = !string.IsNullOrEmpty(product.Image) ? $"{ApplicationUrl.Url}/orderImage/{product.Image}" : "";
+
+            var reviewResponses = product.Reviews.Select(review => ReviewResponse.FromReview(review)).ToList(); 
+
+
+
 
             return new ProductResponse
             {
@@ -35,8 +42,8 @@ namespace ProjectNative.DTOs.ProductDto.Response
                 QuantityInStock = product.QuantityInStock,
                 Calorie = product.Calorie,
                 ImageUrls = imageUrls,
-                Reviews = product.Reviews,
-                Image = product.Image
+                Image = image,
+                Reviews = reviewResponses,
             };
         }
 

@@ -55,7 +55,7 @@ namespace ProjectNative.Services
 
         public bool ValidationExtension(string filename)
         {
-            string[] permittedExtensions = { ".jpg", ".png" };
+            string[] permittedExtensions = { ".jpg", ".png" , ".jpeg" };
             string extension = Path.GetExtension(filename).ToLowerInvariant();
             if (string.IsNullOrEmpty(extension) || !permittedExtensions.Contains(extension))
             {
