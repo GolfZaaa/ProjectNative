@@ -4,6 +4,8 @@
     <TargetFramework>net7.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+
+	  <AspNetCoreHostingModel>OutOfProcess</AspNetCoreHostingModel>
   </PropertyGroup>
 
   <ItemGroup>
@@ -30,6 +32,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="DTOs\Address\Response\" />
+    <Folder Include="DTOs\OrderDto\Response\" />
     <Folder Include="wwwroot\" />
   </ItemGroup>
 

@@ -1,4 +1,5 @@
-﻿using ProjectNative.DTOs;
+﻿using Microsoft.AspNetCore.Mvc;
+using ProjectNative.DTOs;
 using ProjectNative.DTOs.AccConfirm;
 using ProjectNative.DTOs.Address;
 
@@ -20,6 +21,10 @@ namespace ProjectNative.Services.IService
         Task<Object> ChangeUserNameAsync(ChangeUserNameDto dto);
         Task<Object> CreateAddressAsync(AdressDto address);
         Task<Object> PostUserAddressAsync(UseridDto dto);
+        Task<Object> SendMessageToForgotPasswordAsync(SendMessageToForgotPasswordDto dto);
+        Task<Object> ResendConfirmForgotPasswordAsync(ResendConfirmForgotPasswordDto dto);
+        Task<Object> ConfirmEmailToForgotPasswordAsync(ConfirmForgotPasswordDto dto);
+        Task<Object> UploadProfileImageAsync([FromForm] UploadProfileImageDTO dto);
 
     }
 }

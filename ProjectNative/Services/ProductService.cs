@@ -1,25 +1,32 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using ProjectNative.Data;
 using ProjectNative.DTOs.ProductDto;
+using ProjectNative.DTOs.ReviewDto;
 using ProjectNative.Models;
 using ProjectNative.Services.IService;
+using Stripe;
+using Product = ProjectNative.Models.Product;
 
 namespace ProjectNative.Services
 {
-    public class ProductService : IProductService
+    public class ProductService : ControllerBase,IProductService
     {
         private readonly IUploadFileServiceProduct _uploadFileService;
         private readonly DataContext _dataContex;
         private readonly IMapper _mapper;
         private readonly IUploadFileService _uploadFileOnlyService;
+        private readonly DataContext _dataContext;
 
-        public ProductService(IUploadFileServiceProduct uploadFileService, DataContext dataContex, IMapper mapper, IUploadFileService uploadFileOnlyService)
+        public ProductService(IUploadFileServiceProduct uploadFileService, DataContext dataContex, IMapper mapper, IUploadFileService uploadFileOnlyService, DataContext dataContext)
         {
             _uploadFileService = uploadFileService;
             _dataContex = dataContex;
             _mapper = mapper;
             _uploadFileOnlyService = uploadFileOnlyService;
+            _dataContext = dataContext;
         }
 
         public async Task<string> CreateAsync(ProductRequest request)
@@ -99,9 +106,6 @@ namespace ProjectNative.Services
             return (errorMessg, imageName);
         }
 
-
-
-
         public async Task DeleteAsync(Product product)
         {
             //ค้นหาและลบไฟล์ภาพ
@@ -118,8 +122,6 @@ namespace ProjectNative.Services
             _dataContex.Products.Remove(product);
             await _dataContex.SaveChangesAsync();
         }
-
-
         public async Task<Product> GetByIdAsync(int id)
         {
             var result = await _dataContex.Products.Include(p => p.ProductImages)
@@ -130,20 +132,15 @@ namespace ProjectNative.Services
             return result;
         }
 
-
-
-
-
         public async Task<List<Product>> GetProductListAsync()
         {
-            var result = await _dataContex.Products.Include(x=>x.Reviews).ThenInclude(a=>a.ReviewImages).Include(p => p.ProductImages)
+            var result = await _dataContex.Products
+                .Include(p => p.Reviews).ThenInclude(r => r.User)
+                .Include(x => x.Reviews).ThenInclude(a => a.ReviewImages)
+                .Include(p => p.ProductImages)
                 .OrderByDescending(p => p.Id).ToListAsync();
             return result;
         }
-
-
-
-
         public async Task<List<string>> GetTypeAsync()
         {
             var result = await _dataContex.Products.GroupBy(p => p.Type)
@@ -164,9 +161,26 @@ namespace ProjectNative.Services
             //ตรวจสอบและอัพโหลดไฟล์
             (string errorMessage, List<string> imageNames) = await UploadImageAsync(request.FormFiles);
             if (!string.IsNullOrEmpty(errorMessage)) return errorMessage;
+
+            //รูปเดียว Start
+            (string errorMessag, string imageName) = await UploadOnlyImageMainAsync(request.FormFile);
+            if (!string.IsNullOrEmpty(errorMessag)) return errorMessag;
+            //รูปเดียว End
+
             var result = _mapper.Map<Product>(request);
+
+            result.Image = imageName;
+            var product = await _dataContex.Products.AsNoTracking().FirstOrDefaultAsync(x => x.Id == request.Id);
+            //รูปเดียว Start
+            if (request.FormFile == null)
+            {
+                result.Image = product.Image;
+            }
+            //รูปเดียว End
+
             _dataContex.Products.Update(result);
             await _dataContex.SaveChangesAsync();
+
             //ตรวจสอบและจัดการกับไฟล์ที่ส่งเข้ามาใหม่
             if (imageNames.Count > 0)
             {

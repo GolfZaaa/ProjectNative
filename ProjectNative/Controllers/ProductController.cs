@@ -1,7 +1,12 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using ProjectNative.Data;
 using ProjectNative.DTOs.ProductDto;
 using ProjectNative.DTOs.ProductDto.Response;
+using ProjectNative.DTOs.ReviewDto;
+using ProjectNative.Models;
+using ProjectNative.Models.ReviewProduct;
 using ProjectNative.Services;
 using ProjectNative.Services.IService;
 
@@ -12,14 +17,13 @@ namespace ProjectNative.Controllers
     public class ProductController : ControllerBase
     {
         private readonly IProductService _productService;
+        private readonly DataContext _dataContext;
 
-        public ProductController(IProductService productService)
+        public ProductController(IProductService productService, DataContext dataContext)
         {
             _productService = productService;
+            _dataContext = dataContext;
         }
-
-
-
 
 
         [HttpGet("[action]")]
@@ -27,6 +31,15 @@ namespace ProjectNative.Controllers
         {
             var result = await _productService.GetProductListAsync();
             var response = result.Select(ProductResponse.FromProduct).ToList();
+            return Ok(response);
+        }
+
+
+        [HttpGet("[action]")]
+        public async Task<IActionResult> GetProductNoConvert()
+        {
+            var result = await _productService.GetProductListAsync();
+            var response = result.Select(ProductResponseNoConvert.FromProductNoConvert).ToList();
             return Ok(response);
         }
 
@@ -46,14 +59,14 @@ namespace ProjectNative.Controllers
         }
 
 
-        [HttpPut("[action]")]
+        [HttpPost("[action]")]
         public async Task<IActionResult> UpdateProduct([FromForm] ProductRequest productRequest)
         {
             var result = await _productService.GetByIdAsync((int)productRequest.Id);
             if (result == null) return NotFound();
             var resultUpdate = await _productService.UpdateAsync(productRequest);
             if (resultUpdate != null) return BadRequest(resultUpdate);
-            return Ok();
+            return Ok(result);
         }
 
 
@@ -64,7 +77,7 @@ namespace ProjectNative.Controllers
             var result = await _productService.GetByIdAsync(id);
             if (result == null) return NotFound();
             await _productService.DeleteAsync(result);
-            return Ok(new { status = "Deleted", result });
+            return Ok (new { status = "Deleted", result });
         }
 
 
@@ -81,12 +94,32 @@ namespace ProjectNative.Controllers
         public async Task<IActionResult> GetProductById(int id)
         {
             var result = await _productService.GetByIdAsync(id);
-
-
             if (result == null) return NotFound();
-
-
             return Ok(ProductResponse.FromProduct(result));
+        }
+
+        [HttpGet("[action]")]
+        public async Task<ActionResult<IEnumerable<ProductImage>>> GetProductImages()
+        {
+            var reviewImages = await _dataContext.ProductImages.ToListAsync();
+            return Ok(reviewImages);
+        }
+
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> DeleteImagesProduct(DeleteImageDto dto)
+        {
+            var result = await _dataContext.ProductImages.FindAsync(dto.Id);
+
+            if (result == null)
+            {
+                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "Image Not Found" });
+            }
+
+            _dataContext.ProductImages.Remove(result);
+            await _dataContext.SaveChangesAsync();
+
+            return StatusCode(StatusCodes.Status200OK, new ResponseReport { Status = "201", Message = "Delete Image Success" });
         }
 
 

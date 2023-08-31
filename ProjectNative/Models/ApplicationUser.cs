@@ -11,6 +11,6 @@ namespace ProjectNative.Models
     {
         [JsonIgnore]
         public List<Address> Addresses { get; set; }
-
+        public string ProfileImage { get; set; }
     }
 }

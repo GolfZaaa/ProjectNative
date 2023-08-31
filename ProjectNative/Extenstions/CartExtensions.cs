@@ -41,7 +41,11 @@ namespace ProjectNative.Extenstions
 
         public static ProductResponse FromProduct(Product product)
         {
-            var imageUrls = product.ProductImages.Select(a => !string.IsNullOrEmpty(a.Image) ? $"{ApplicationUrl.Url}/images/{a.Image}" : "").ToList();
+            //var imageUrls = product.ProductImages.Select(a => !string.IsNullOrEmpty(a.Image) ? $"{ApplicationUrl.Url}/images/{a.Image}" : "").ToList();
+            var imageUrls = product.ProductImages
+                         .Where(a => !string.IsNullOrEmpty(a.Image))
+                         .Select(a => a.Image)
+                         .ToList();
             return new ProductResponse
             {
                 Id = product.Id,
@@ -51,7 +55,8 @@ namespace ProjectNative.Extenstions
                 Type = product.Type,
                 QuantityInStock = product.QuantityInStock,
                 Calorie = product.Calorie,
-                ImageUrls = imageUrls
+                Image = product.Image,
+                ImageUrls = imageUrls,
             };
         }
 

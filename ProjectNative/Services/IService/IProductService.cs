@@ -1,4 +1,6 @@
-﻿using ProjectNative.DTOs.ProductDto;
+﻿using Microsoft.AspNetCore.Mvc;
+using ProjectNative.DTOs.ProductDto;
+using ProjectNative.DTOs.ReviewDto;
 using ProjectNative.Models;
 
 namespace ProjectNative.Services.IService
@@ -13,6 +15,5 @@ namespace ProjectNative.Services.IService
         Task<List<Product>> SearchAsync(string name);
         Task<Product> GetByIdAsync(int id);
         Task<(string errorMessage, List<string> imageNames)> UploadImageAsync(IFormFileCollection formFiles);
-
     }
 }

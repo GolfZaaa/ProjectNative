@@ -8,6 +8,7 @@ using ProjectNative.Models;
 using ProjectNative.Models.OrderAccount;
 using ProjectNative.Models.ReviewProduct;
 using ProjectNative.Services.IService;
+using SendGrid.Helpers.Mail;
 using Stripe;
 
 namespace ProjectNative.Controllers
@@ -20,91 +21,60 @@ namespace ProjectNative.Controllers
         private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IUploadFileServiceProduct _uploadFileService;
+        private readonly IReviewService _reviewService;
 
         public ReviewController(DataContext dataContext, IHttpContextAccessor httpContextAccessor, UserManager<ApplicationUser> userManager
-            , IUploadFileServiceProduct uploadFileService)
+            , IUploadFileServiceProduct uploadFileService, IReviewService reviewService)
         {
             _dataContext = dataContext;
             _httpContextAccessor = httpContextAccessor;
             _userManager = userManager;
             _uploadFileService = uploadFileService;
+            _reviewService = reviewService;
         }
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> GetProductReviewsId([FromBody]GetProductReviewsIdDto dto)
+        public async Task<IActionResult> GetProductReviewsId([FromBody] GetProductReviewsIdDto dto)
         {
-            var user = await _userManager.Users.FirstOrDefaultAsync(a => a.Id == dto.UserId);
-
-            if (user == null)
-            {
-                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "User Not Found" });
-            }
-            var result = await _dataContext.Reviews
-                .Where(review => review.UserId == dto.UserId)
-                .Include(a=>a.ReviewImages)
-                .ToListAsync();
+            var result = await _reviewService.GetProductReviewsIdAsync(dto);
             return Ok(result);
         }
 
         [HttpGet("[action]")]
         public async Task<IActionResult> GetProductReviews()
         {
-            var result = await _dataContext.Reviews.Include(a=>a.ReviewImages).ToListAsync();
+            var result = await _dataContext.Reviews.Include(a => a.ReviewImages).ToListAsync();
+            return Ok(result);
+        }
 
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteComment(int id)
+        {
+            var result = await _reviewService.DeleteCommentAsync(id);
+            return Ok(result);
+        }
+
+
+        [HttpPost("[action]")]
+        public async Task<IActionResult> DeleteImage(DeleteImageDto dto)
+        {
+            var result = await _reviewService.DeleteImageAsync(dto);
             return Ok(result);
         }
 
         [HttpPost("[action]")]
-        public async Task<IActionResult> AddProductComment([FromForm]ReviewDto dto)
+        public async Task<IActionResult> AddProductComment([FromForm] ReviewDto dto)
         {
-            (string errorMessage, List<string> imageNames) = await UploadImageAsync(dto.FormFiles);
-
-            var user = await _userManager.FindByIdAsync(dto.UserId);
-            if (user == null)
-            {
-                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "User Not Found" });
-            }
-            var product = await _dataContext.Products.FirstOrDefaultAsync(a=> a.Id == dto.ProductId);
-
-
-            if (product == null)
-            {
-                return StatusCode(StatusCodes.Status404NotFound, new ResponseReport { Status = "404", Message = "Product Not Found" });
-            }
-
-            var Datetimenow = DateTime.Now; 
-            
-            var newReview = new Models.ReviewProduct.Review
-            {
-                Texts = dto.Texts,
-                UserId = user.Id, 
-                ProductId = product.Id,
-                Date = Datetimenow,                
-                Star = dto.Star,
-                ReviewImages = imageNames.Select(imageName => new ReviewImage { Image = imageName }).ToList()
-            };
-            _dataContext.Reviews.Add(newReview);
-            await _dataContext.SaveChangesAsync();
-            return StatusCode(StatusCodes.Status201Created, new ResponseReport { Status = "200", Message = "Create Review Success" });
+            var result = await _reviewService.AddProductCommentAsync(dto);
+            return Ok(result);
         }
 
-        [HttpPost]
-        public async Task<(string errorMessage, List<string> imageNames)> UploadImageAsync(IFormFileCollection formFiles)
+        [HttpGet("[action]")]
+        public async Task<ActionResult<IEnumerable<ReviewImage>>> GetReviewImages()
         {
-            var errorMessage = string.Empty;
-            var imageNames = new List<string>();
-            if (_uploadFileService.IsUpload(formFiles))
-            {
-                errorMessage = _uploadFileService.Validation(formFiles);
-                if (string.IsNullOrEmpty(errorMessage))
-                {
-                    //บันทึกลงไฟล์ในโฟลเดอร์ 
-                    imageNames = await _uploadFileService.UploadImages(formFiles);
-                }
-            }
-            return (errorMessage, imageNames);
+            var reviewImages = await _dataContext.ReviewImages.ToListAsync();
+            return Ok(reviewImages);
         }
-
 
     }
 }

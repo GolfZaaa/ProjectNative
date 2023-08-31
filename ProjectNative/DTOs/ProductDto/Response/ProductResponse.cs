@@ -21,6 +21,7 @@ namespace ProjectNative.DTOs.ProductDto.Response
         public List<string> ImageUrls { get; set; }
         public List<ReviewResponse> Reviews { get; set; }
 
+
         static public ProductResponse FromProduct(Product product)
         {
             var imageUrls = product.ProductImages.Select(a => !string.IsNullOrEmpty(a.Image) ? $"{ApplicationUrl.Url}/images/{a.Image}" : "").ToList();
@@ -46,9 +47,5 @@ namespace ProjectNative.DTOs.ProductDto.Response
                 Reviews = reviewResponses,
             };
         }
-
-
-
-
     }
 }

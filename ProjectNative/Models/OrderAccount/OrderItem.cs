@@ -15,5 +15,6 @@ namespace ProjectNative.Models.OrderAccount
         public int OrderId { get; set; }
         [JsonIgnore]
         public Order Order { get; set; }
+        public ReviewStatus ReviewStatus { get; set; }
     }
 }

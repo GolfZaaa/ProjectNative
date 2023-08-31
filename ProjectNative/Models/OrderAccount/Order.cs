@@ -23,11 +23,11 @@ namespace ProjectNative.Models.OrderAccount
         public string? PaymentIntentId { get; set; }
         public string? ClientSecret { get; set; } 
 
+
         public int AddressId { get; set; }
         public Address Address { get; set; }
 
         public OrderStatus OrderStatus { get; set; }
-
 
 
 

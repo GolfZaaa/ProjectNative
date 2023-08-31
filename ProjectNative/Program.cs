@@ -73,6 +73,8 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICartUsersService, CartUsersService>();
 builder.Services.AddScoped<IUploadFileService, UploadFileService>();
 builder.Services.AddScoped<IUploadFileServiceProduct, UploadFileServiceProduct>();
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddMemoryCache();
 
 
@@ -137,6 +139,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseCors("corsapp");
 
+app.MapFallbackToController("Index", "Fallback");
 
 app.UseAuthentication();
 app.UseAuthorization();

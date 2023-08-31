@@ -9,5 +9,7 @@
         public DateTime? Date { get; set; }
         public int Star { get;set; }
         public IFormFileCollection? FormFiles { get; set; }
+        public int OrderItemId { get; set; }
+
     }
 }

@@ -6,19 +6,26 @@ using ProjectNative.Models.CartAccount;
 using ProjectNative.Models.OrderAccount;
 using ProjectNative.Models.ReviewProduct;
 using System.Reflection.Emit;
+using static Org.BouncyCastle.Math.EC.ECCurve;
 
 namespace ProjectNative.Data
 {
     public class DataContext : IdentityDbContext<ApplicationUser>
     {
-        public DataContext(DbContextOptions options) : base(options)
+        private readonly IConfiguration _configuration;
+
+        public DataContext(DbContextOptions options,IConfiguration configuration) : base(options)
         {
+            _configuration = configuration;
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseSqlServer("Server=DESKTOP-DTGB06O\\SQLEXPRESS; Database=ProjectNativeSummer; Trusted_connection=true; TrustServerCertificate=true");
+
+            //optionsBuilder.UseSqlServer("Server=DESKTOP-DTGB06O\\SQLEXPRESS; Database=ProjectNativeSummer; Trusted_connection=true; TrustServerCertificate=true");
+            optionsBuilder.UseSqlServer(_configuration.GetConnectionString("DatabaseConnect"));
+
         }
 
         //สร้างข้อมูลเริ่มต้นให้กับ Role
